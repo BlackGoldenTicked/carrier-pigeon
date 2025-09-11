@@ -1,45 +1,58 @@
-import { useState, useEffect } from 'react'
-import { cn } from '@/lib/utils'
+import { useEffect, useState } from 'react'
 
 /**
  * 极简模式组件
- * 提供一个完全空白的新标签页体验，带有微妙的动画效果
+ * 提供一个完全空白的新标签页体验
  */
 export default function MinimalMode() {
-  const [mounted, setMounted] = useState(false)
+  const [isDark, setIsDark] = useState(false)
+  const [debugInfo, setDebugInfo] = useState('')
 
   /**
-   * 组件挂载动画
+   * 检测当前主题状态
    */
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 100)
-    return () => clearTimeout(timer)
+    const checkTheme = () => {
+      const htmlHasDark = document.documentElement.classList.contains('dark')
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      
+      setIsDark(htmlHasDark)
+      setDebugInfo(`系统偏好: ${systemPrefersDark ? '暗色' : '亮色'}, HTML类名: ${htmlHasDark ? '有dark' : '无dark'}`)
+      
+      console.log('主题状态检查:', {
+        systemPrefersDark,
+        htmlHasDark,
+        htmlClasses: document.documentElement.className
+      })
+    }
+
+    // 初始检查
+    checkTheme()
+
+    // 监听类名变化
+    const observer = new MutationObserver(checkTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
+
+    return () => observer.disconnect()
   }, [])
 
   return (
-    <div className={cn(
-      "min-h-screen w-full relative overflow-hidden",
-      "bg-white dark:bg-gray-900",
-      "transition-all duration-1000 ease-out",
-      mounted ? "opacity-100" : "opacity-0"
-    )}>
-      {/* 微妙的背景渐变 */}
-      <div className={cn(
-        "absolute inset-0 transition-opacity duration-2000",
-        "bg-gradient-to-br from-transparent via-gray-50/30 to-transparent",
-        "dark:from-transparent dark:via-gray-800/20 dark:to-transparent",
-        mounted ? "opacity-100" : "opacity-0"
-      )} />
+    <div className="min-h-screen w-full bg-white dark:bg-gray-900 relative">
+      {/* 调试信息 - 仅在开发环境显示 */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="absolute top-4 left-4 p-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs rounded shadow-lg z-50">
+          <div>当前主题: {isDark ? '暗色模式' : '亮色模式'}</div>
+          <div>{debugInfo}</div>
+          <div className="mt-1 text-xs opacity-70">
+            按 F12 打开控制台查看详细日志
+          </div>
+        </div>
+      )}
       
-      {/* 主要内容区域 */}
-      <div className="relative z-10 h-screen w-full flex items-center justify-center">
-        {/* 可选的微妙装饰元素 */}
-        <div className={cn(
-          "w-1 h-1 rounded-full bg-gray-200 dark:bg-gray-700",
-          "transition-all duration-3000 ease-out",
-          mounted ? "opacity-20 scale-100" : "opacity-0 scale-0"
-        )} />
-      </div>
+      {/* 完全空白的页面 */}
     </div>
   )
 }
