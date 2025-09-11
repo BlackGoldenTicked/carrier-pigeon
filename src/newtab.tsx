@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import './style.css'
-import { HoverBorderGradient } from './components/ui/hover-border-gradient'
+
+import { Button as MovingBorderButton, AdvancedMovingBorder } from './components/ui/moving-border'
 import { AnimatedBorder, AnimatedBorderContainer } from './components/ui/animated-border'
 import { ModeSelector } from './components/ui/mode-selector'
+
 
 /**
  * 初始化系统主题检测
@@ -142,7 +144,8 @@ const modeConfig = {
     title: 'Pro 模式',
     description: '完整的AI对话界面',
     icon: '●'
-  }
+  },
+
 }
 
 /**
@@ -271,17 +274,19 @@ function NormalMode() {
                >
                  {row.map((link) => (
                    <div key={link.id} className="relative">
-                     <HoverBorderGradient
+                     <AdvancedMovingBorder
+                       borderRadius="0.75rem"
                        containerClassName="min-w-40 max-w-52 h-11"
-                       className={`text-sm font-medium px-4 py-2 w-full h-full flex items-center justify-center transition-all duration-300 ${
+                       className={`text-sm font-medium transition-all duration-300 ${
                          selectedLinks.has(link.id)
                            ? 'bg-blue-500 text-white shadow-lg'
-                           : 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white'
+                           : 'bg-white dark:bg-slate-900 text-black dark:text-white'
                        }`}
+                       duration={3000}
                        onClick={(e) => handleLinkClick(link, e)}
                      >
                        {link.title}
-                     </HoverBorderGradient>
+                     </AdvancedMovingBorder>
                      
                      {/* 选中指示器 */}
                      {selectedLinks.has(link.id) && (
@@ -701,8 +706,9 @@ function NewTabPage() {
             </div>
           </div>
         )
+
       default:
-        return renderModeContent()
+        return <NormalMode />
     }
   }
 
