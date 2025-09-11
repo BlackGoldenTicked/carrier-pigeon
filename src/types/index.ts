@@ -11,12 +11,9 @@ export enum TabMode {
  * 快捷链接接口
  */
 export interface QuickLink {
-  id: string
+  id: number
   title: string
   url: string
-  icon?: string
-  description?: string
-  category?: string
 }
 
 /**
@@ -62,7 +59,7 @@ export interface ChatSession {
  */
 export interface UserSettings {
   mode: TabMode
-  theme: 'light' | 'dark' | 'auto'
+  theme: 'light' | 'dark'
   quickLinks: QuickLink[]
   aiModels: AIModel[]
   defaultModel?: string
