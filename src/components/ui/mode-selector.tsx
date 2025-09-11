@@ -53,21 +53,7 @@ export function ModeSelector({
         case '3':
           handleModeSelect(2)
           break
-        case 'ArrowUp':
-          e.preventDefault()
-          setSelectedIndex(prev => {
-            const newIndex = (prev - 1 + modes.length) % modes.length
-            // 当切换到索引0（对应数字键1）时，立即进入一般模式
-            if (newIndex === 0) {
-              setTimeout(() => handleModeSelect(0), 0)
-            }
-            return newIndex
-          })
-          break
-        case 'ArrowDown':
-          e.preventDefault()
-          setSelectedIndex(prev => (prev + 1) % modes.length)
-          break
+
         case 'Enter':
           e.preventDefault()
           handleModeSelect(selectedIndex)
@@ -195,10 +181,7 @@ export function ModeSelector({
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-1">
-                <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-700 rounded border">↑↓</kbd>
-                <span>导航</span>
-              </div>
+
               <div className="flex items-center space-x-1">
                 <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-700 rounded border">Enter</kbd>
                 <span>选择</span>

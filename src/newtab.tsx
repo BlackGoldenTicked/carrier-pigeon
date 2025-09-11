@@ -384,6 +384,9 @@ function PopupMenu({ isOpen, onClose, currentMode, onModeChange }: {
 }) {
   const [isDarkMode, setIsDarkMode] = useState(false)
 
+  
+
+
   /**
    * 初始化主题状态
    */
@@ -463,8 +466,14 @@ function PopupMenu({ isOpen, onClose, currentMode, onModeChange }: {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-end p-4 bg-black/20 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-80 mt-16 mr-4">
+    <div 
+      className="fixed inset-0 z-50 flex items-start justify-end p-4 bg-black/20 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-80 mt-16 mr-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* 头部 */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">设置菜单</h3>
@@ -530,6 +539,8 @@ function PopupMenu({ isOpen, onClose, currentMode, onModeChange }: {
               </div>
           </div>
 
+
+
           {/* 管理功能 */}
           <div>
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">管理功能</h4>
@@ -572,6 +583,12 @@ function NewTabPage() {
   const [currentMode, setCurrentMode] = useState(TabMode.NORMAL)
   const [showPopupMenu, setShowPopupMenu] = useState(false)
   const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false)
+
+
+
+
+
+
 
   /**
    * 处理全局快捷键
