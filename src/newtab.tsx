@@ -163,19 +163,19 @@ function NewTabPage() {
         <div className="text-lg">{modeConfig[currentMode].icon}</div>
       </button>
 
-      {/* 调试信息面板 */}
-      <div className="absolute top-4 left-4 p-3 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 z-50">
-        <div className="font-bold mb-2">🔍 主题调试信息</div>
-        <div id="theme-debug" className="mb-2">检测中...</div>
-        <div className="text-xs opacity-70">
-          <div>• 按 F12 打开控制台查看详细日志</div>
-          <div>• 在系统设置中切换主题测试</div>
-        </div>
-        <div className="mt-2 text-xs">
-          <div>当前模式: {modeConfig[currentMode].title}</div>
-          <div>当前背景: <span className="dark:hidden">亮色</span><span className="hidden dark:inline">暗色</span></div>
-        </div>
-      </div>
+      {/* 调试信息面板 - 隐藏但保留代码 */}
+       <div className="hidden absolute top-4 left-4 p-3 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 z-50">
+         <div className="font-bold mb-2">🔍 主题调试信息</div>
+         <div id="theme-debug" className="mb-2">检测中...</div>
+         <div className="text-xs opacity-70">
+           <div>• 按 F12 打开控制台查看详细日志</div>
+           <div>• 在系统设置中切换主题测试</div>
+         </div>
+         <div className="mt-2 text-xs">
+           <div>当前模式: {modeConfig[currentMode].title}</div>
+           <div>当前背景: <span className="dark:hidden">亮色</span><span className="hidden dark:inline">暗色</span></div>
+         </div>
+       </div>
 
       {/* 模式选择器 */}
       {showModeSelector && (
