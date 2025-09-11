@@ -1,8 +1,8 @@
 {
   "name": "mytab-extension",
-  "displayName": "MyTab - 智能新标签页",
+  "displayName": "mytab",
   "version": "0.0.1",
-  "description": "基于 Plasmo 的智能新标签页扩展，支持极简、一般和 Pro 三种模式",
+  "description": "mytab",
   "author": "zhangyu",
   "scripts": {
     "dev": "plasmo dev",

@@ -584,6 +584,61 @@ function NewTabPage() {
   const [showPopupMenu, setShowPopupMenu] = useState(false)
   const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false)
 
+  /**
+   * 从存储加载上次保存的模式
+   */
+  useEffect(() => {
+    const loadSavedMode = async () => {
+      try {
+        let savedMode = TabMode.NORMAL
+        
+        // 尝试从 Chrome 存储读取模式设置
+        if (chrome?.storage?.sync) {
+          const result = await chrome.storage.sync.get(['mytab-current-mode'])
+          if (result['mytab-current-mode']) {
+            savedMode = result['mytab-current-mode']
+          }
+        } else {
+          // 降级到 localStorage
+          const saved = localStorage.getItem('mytab-current-mode')
+          if (saved) {
+            savedMode = saved
+          }
+        }
+        
+        // 验证模式是否有效
+        if (Object.values(TabMode).includes(savedMode)) {
+          setCurrentMode(savedMode)
+        }
+      } catch (error) {
+        console.error('模式加载失败:', error)
+        // 降级到默认模式
+        setCurrentMode(TabMode.NORMAL)
+      }
+    }
+
+    loadSavedMode()
+  }, [])
+
+  /**
+   * 处理模式切换并保存到存储
+   */
+  const handleModeChange = async (mode: string) => {
+    try {
+      // 立即更新UI
+      setCurrentMode(mode)
+      
+      // 保存到存储
+      if (chrome?.storage?.sync) {
+        await chrome.storage.sync.set({ 'mytab-current-mode': mode })
+      } else {
+        localStorage.setItem('mytab-current-mode', mode)
+      }
+    } catch (error) {
+      console.error('模式保存失败:', error)
+    }
+  }
+
 
 
 
@@ -608,13 +663,13 @@ function NewTabPage() {
         const modes = Object.keys(modeConfig)
         switch (e.key) {
           case '1':
-            if (modes[0]) setCurrentMode(modes[0])
+            if (modes[0]) handleModeChange(modes[0])
             break
           case '2':
-            if (modes[1]) setCurrentMode(modes[1])
+            if (modes[1]) handleModeChange(modes[1])
             break
           case '3':
-            if (modes[2]) setCurrentMode(modes[2])
+            if (modes[2]) handleModeChange(modes[2])
             break
         }
       }
@@ -670,7 +725,7 @@ function NewTabPage() {
            onClose={() => setShowPopupMenu(false)}
            currentMode={currentMode}
            onModeChange={(mode) => {
-             setCurrentMode(mode)
+             handleModeChange(mode)
              setShowPopupMenu(false)
            }}
          />
@@ -681,7 +736,7 @@ function NewTabPage() {
         onClose={() => setIsModeSelectorOpen(false)}
         currentMode={currentMode}
         onModeChange={(mode) => {
-          setCurrentMode(mode)
+          handleModeChange(mode)
           setIsModeSelectorOpen(false)
         }}
         modeConfig={modeConfig}
