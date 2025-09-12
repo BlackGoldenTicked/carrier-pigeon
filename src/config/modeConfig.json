@@ -1,0 +1,24 @@
+{
+  "modeConfig": {
+    "minimal": {
+      "title": "极简模式",
+      "description": "纯净的空白页面",
+      "icon": "○"
+    },
+    "normal": {
+      "title": "一般模式",
+      "description": "快捷链接和AI对话",
+      "icon": "◐"
+    },
+    "pro": {
+      "title": "Pro 模式",
+      "description": "完整的AI对话界面",
+      "icon": "●"
+    }
+  },
+  "TabMode": {
+    "MINIMAL": "minimal",
+    "NORMAL": "normal",
+    "PRO": "pro"
+  }
+}

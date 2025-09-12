@@ -1,0 +1,58 @@
+{
+  "quickLinks": [
+    [
+      {
+        "id": 1,
+        "title": "Google",
+        "url": "https://www.google.com"
+      },
+      {
+        "id": 2,
+        "title": "GitHub",
+        "url": "https://github.com"
+      },
+      {
+        "id": 3,
+        "title": "YouTube",
+        "url": "https://www.youtube.com"
+      },
+      {
+        "id": 4,
+        "title": "Twitter",
+        "url": "https://twitter.com"
+      },
+      {
+        "id": 5,
+        "title": "Chaordex",
+        "url": "https://www.chaordex.com"
+      }
+    ],
+    [
+      {
+        "id": 6,
+        "title": "Folo",
+        "url": "https://app.folo.is"
+      },
+      {
+        "id": 7,
+        "title": "Touzi",
+        "url": "https://touzi.ws"
+      },
+      {
+        "id": 8,
+        "title": "微信读书",
+        "url": "https://weread.qq.com/"
+      },
+      {
+        "id": 9,
+        "title": "Notion",
+        "url": "https://www.notion.so"
+      },
+      {
+        "id": 10,
+        "title": "Index",
+        "url": "https://in.chaordex.com"
+      }
+    ]
+  ]
+}

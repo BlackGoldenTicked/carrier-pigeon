@@ -1,0 +1,8 @@
+{
+  "aiModels": [
+    { "id": "gpt-4", "name": "GPT-4", "color": "bg-green-500" },
+    { "id": "claude", "name": "Claude", "color": "bg-orange-500" },
+    { "id": "gemini", "name": "Gemini", "color": "bg-blue-500" },
+    { "id": "llama", "name": "Llama", "color": "bg-purple-500" }
+  ]
+}

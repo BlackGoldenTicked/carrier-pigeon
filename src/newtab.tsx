@@ -4,6 +4,7 @@ import './style.css'
 import { Button as MovingBorderButton, AdvancedMovingBorder } from './components/ui/moving-border'
 import { AnimatedBorder, AnimatedBorderContainer } from './components/ui/animated-border'
 import { ModeSelector } from './components/ui/mode-selector'
+import { getQuickLinks, getAIModels, getModeConfig, getTabMode } from './utils/configLoader'
 
 
 /**
@@ -86,67 +87,12 @@ function initTheme() {
 initTheme()
 
 /**
- * 模式枚举
+ * 从JSON配置文件加载数据
  */
-const TabMode = {
-  MINIMAL: 'minimal',
-  NORMAL: 'normal', 
-  PRO: 'pro'
-}
-
-/**
- * 快捷链接数据
- */
-const quickLinks = [
-  // 第一行
-  [
-    { id: 1, title: 'Google', url: 'https://www.google.com' },
-    { id: 2, title: 'GitHub', url: 'https://github.com' },
-    { id: 3, title: 'YouTube', url: 'https://www.youtube.com' },
-    { id: 4, title: 'Twitter', url: 'https://twitter.com' },
-    { id: 5, title: 'ChatGPT', url: 'https://chat.openai.com' }
-  ],
-  // 第二行
-  [
-    { id: 6, title: 'Stack Overflow', url: 'https://stackoverflow.com' },
-    { id: 7, title: 'MDN', url: 'https://developer.mozilla.org' },
-    { id: 8, title: 'Dribbble', url: 'https://dribbble.com' },
-    { id: 9, title: 'Figma', url: 'https://www.figma.com' },
-    { id: 10, title: 'Notion', url: 'https://www.notion.so' }
-  ]
-]
-
-/**
- * AI 模型选项
- */
-const aiModels = [
-  { id: 'gpt-4', name: 'GPT-4', color: 'bg-green-500' },
-  { id: 'claude', name: 'Claude', color: 'bg-orange-500' },
-  { id: 'gemini', name: 'Gemini', color: 'bg-blue-500' },
-  { id: 'llama', name: 'Llama', color: 'bg-purple-500' }
-]
-
-/**
- * 模式配置
- */
-const modeConfig = {
-  [TabMode.MINIMAL]: {
-    title: '极简模式',
-    description: '纯净的空白页面',
-    icon: '○'
-  },
-  [TabMode.NORMAL]: {
-    title: '一般模式', 
-    description: '快捷链接和AI对话',
-    icon: '◐'
-  },
-  [TabMode.PRO]: {
-    title: 'Pro 模式',
-    description: '完整的AI对话界面',
-    icon: '●'
-  },
-
-}
+const TabMode = getTabMode()
+const quickLinks = getQuickLinks()
+const aiModels = getAIModels()
+const modeConfig = getModeConfig()
 
 /**
  * 一般模式组件
