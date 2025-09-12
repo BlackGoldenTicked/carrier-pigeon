@@ -228,7 +228,7 @@ function NormalMode() {
                            ? 'bg-blue-500 text-white shadow-lg'
                            : 'bg-white dark:bg-slate-900 text-black dark:text-white'
                        }`}
-                       duration={3000}
+                       duration={8000}
                        onClick={(e) => handleLinkClick(link, e)}
                      >
                        {link.title}

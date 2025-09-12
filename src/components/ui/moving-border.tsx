@@ -121,6 +121,14 @@ export function Button({
 /**
  * 高级 Moving Border 按钮组件
  * 提供更多自定义选项和动画效果
+ * @param borderRadius - 边框圆角大小
+ * @param children - 按钮内容
+ * @param as - 渲染的HTML标签，默认为button
+ * @param containerClassName - 容器样式类名
+ * @param borderClassName - 边框样式类名
+ * @param duration - 动画持续时间（毫秒），默认6000ms提供更慢更明显的动画
+ * @param className - 按钮内容样式类名
+ * @param props - 其他HTML属性
  */
 export function AdvancedMovingBorder({
   borderRadius = "1.75rem",
@@ -128,7 +136,7 @@ export function AdvancedMovingBorder({
   as: Component = "button",
   containerClassName,
   borderClassName,
-  duration = 2000,
+  duration = 6000,
   className,
   ...otherProps
 }: MovingBorderProps) {
@@ -154,8 +162,8 @@ export function AdvancedMovingBorder({
       {/* 主要动态边框 */}
       <div
         className={cn(
-          "absolute inset-0 transition-all duration-300",
-          isHovered ? "opacity-100" : "opacity-80",
+          "absolute inset-0 transition-all duration-500",
+          isHovered ? "opacity-100" : "opacity-90",
           borderClassName
         )}
         style={{
@@ -164,16 +172,17 @@ export function AdvancedMovingBorder({
             conic-gradient(
               from 0deg,
               transparent 0deg,
-              transparent 40deg,
-              #3b82f6 80deg,
-              #8b5cf6 140deg,
-              #ec4899 200deg,
-              #f59e0b 260deg,
-              #10b981 320deg,
+              transparent 20deg,
+              #3b82f6 60deg,
+              #8b5cf6 120deg,
+              #ec4899 180deg,
+              #f59e0b 240deg,
+              #10b981 300deg,
+              transparent 340deg,
               transparent 360deg
             )
           `,
-          animation: `spin ${isHovered ? duration / 3 : duration / 1.5}ms linear infinite`,
+          animation: `spin ${isHovered ? duration / 2 : duration}ms linear infinite`,
         }}
       />
       
