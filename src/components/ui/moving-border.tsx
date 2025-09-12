@@ -138,42 +138,18 @@ export function AdvancedMovingBorder({
     <Component
       className={cn(
         "relative overflow-hidden transition-all duration-300 ease-out",
-        "hover:scale-110 hover:shadow-2xl hover:shadow-blue-500/25 active:scale-95",
+        "hover:scale-110 active:scale-95",
         "transform-gpu", // 启用GPU加速
         containerClassName
       )}
       style={{
         borderRadius: borderRadius,
-        filter: isHovered ? "drop-shadow(0 0 20px rgba(59, 130, 246, 0.5))" : "none",
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       {...otherProps}
     >
-      {/* 外层发光边框 */}
-      <div
-        className={cn(
-          "absolute inset-[-4px] opacity-60 transition-all duration-300 blur-sm",
-          isHovered ? "opacity-100 blur-none" : "opacity-60 blur-sm",
-          borderClassName
-        )}
-        style={{
-          borderRadius: borderRadius,
-          background: `
-            conic-gradient(
-              from 0deg,
-              transparent 0deg,
-              #3b82f6 60deg,
-              #8b5cf6 120deg,
-              #ec4899 180deg,
-              #f59e0b 240deg,
-              #10b981 300deg,
-              transparent 360deg
-            )
-          `,
-          animation: `spin ${isHovered ? duration / 4 : duration / 1.5}ms linear infinite`,
-        }}
-      />
+
       
       {/* 主要动态边框 */}
       <div
