@@ -1,8 +1,67 @@
 {
-  "aiModels": [
-    { "id": "gpt-4", "name": "GPT-4", "color": "bg-green-500" },
-    { "id": "claude", "name": "Claude", "color": "bg-orange-500" },
-    { "id": "gemini", "name": "Gemini", "color": "bg-blue-500" },
-    { "id": "llama", "name": "Llama", "color": "bg-purple-500" }
+  "aiModelCategories": [
+    {
+      "type": "language",
+      "title": "语言模型",
+      "description": "专注于文本生成和对话的AI模型",
+      "models": [
+        {
+          "id": "gpt-4",
+          "name": "GPT-4",
+          "type": "language",
+          "url": "https://chat.openai.com",
+          "selectedColor": "#10a37f"
+        },
+        {
+          "id": "claude-3",
+          "name": "Claude 3",
+          "type": "language",
+          "url": "https://claude.ai",
+          "selectedColor": "#ff6b35"
+        },
+        {
+          "id": "gemini",
+          "name": "Gemini",
+          "type": "language",
+          "url": "https://gemini.google.com",
+          "selectedColor": "#4285f4"
+        },
+        {
+          "id": "llama",
+          "name": "Llama",
+          "type": "language",
+          "url": "https://llama.meta.com",
+          "selectedColor": "#7c3aed"
+        }
+      ]
+    },
+    {
+      "type": "multimedia",
+      "title": "音视频模型",
+      "description": "专注于音频、视频生成和处理的AI模型",
+      "models": [
+        {
+          "id": "suno",
+          "name": "Suno AI",
+          "type": "multimedia",
+          "url": "https://suno.com",
+          "selectedColor": "#ff4081"
+        },
+        {
+          "id": "runway",
+          "name": "Runway ML",
+          "type": "multimedia",
+          "url": "https://runwayml.com",
+          "selectedColor": "#00bcd4"
+        },
+        {
+          "id": "elevenlabs",
+          "name": "ElevenLabs",
+          "type": "multimedia",
+          "url": "https://elevenlabs.io",
+          "selectedColor": "#9c27b0"
+        }
+      ]
+    }
   ]
 }

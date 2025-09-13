@@ -17,18 +17,39 @@ export interface QuickLink {
 }
 
 /**
+ * AI 模型类型枚举
+ */
+export enum AIModelType {
+  LANGUAGE = 'language',
+  MULTIMEDIA = 'multimedia'
+}
+
+/**
  * AI 模型服务接口
  */
 export interface AIModel {
   id: string
   name: string
-  provider: string
+  type: AIModelType
+  url: string
+  selectedColor: string
+  provider?: string
   apiKey?: string
   baseUrl?: string
-  model: string
+  model?: string
   maxTokens?: number
   temperature?: number
-  isActive: boolean
+  isActive?: boolean
+}
+
+/**
+ * AI 模型分类配置接口
+ */
+export interface AIModelCategory {
+  type: AIModelType
+  title: string
+  description: string
+  models: AIModel[]
 }
 
 /**

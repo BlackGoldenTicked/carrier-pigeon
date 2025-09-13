@@ -5,6 +5,7 @@ import { Button as MovingBorderButton, AdvancedMovingBorder } from './components
 import { AnimatedBorder, AnimatedBorderContainer } from './components/ui/animated-border'
 import { ModeSelector } from './components/ui/mode-selector'
 import { getQuickLinks, getAIModels, getModeConfig, getTabMode } from './utils/configLoader'
+import { AIModelCategory } from './types'
 
 
 /**
@@ -91,8 +92,11 @@ initTheme()
  */
 const TabMode = getTabMode()
 const quickLinks = getQuickLinks()
-const aiModels = getAIModels()
+const aiModelCategories = getAIModels()
 const modeConfig = getModeConfig()
+
+// 扁平化所有AI模型用于兼容性
+const allAIModels = aiModelCategories.flatMap(category => category.models)
 
 /**
  * 一般模式组件
@@ -103,6 +107,7 @@ function NormalMode() {
   const [inputText, setInputText] = useState('')
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionStart, setSelectionStart] = useState(null)
+
 
   /**
    * 处理链接点击
@@ -260,23 +265,40 @@ function NormalMode() {
               <div className="bg-white dark:bg-gray-800 rounded-3xl p-6">
                 {/* 模型选择区域 */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">AI 模型:</span>
-                    <div className="flex space-x-2">
-                      {aiModels.map((model) => (
-                        <button
-                          key={model.id}
-                          onClick={() => toggleModel(model.id)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                            selectedModels.has(model.id)
-                              ? `${model.color} text-white shadow-md`
-                              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                          }`}
-                        >
-                          {model.name}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex flex-col space-y-3">
+                    {aiModelCategories.map((category) => (
+                      <div key={category.type} className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]">
+                          {category.title}:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {category.models.map((model) => (
+                            <button
+                              key={model.id}
+                              onClick={() => {
+                                toggleModel(model.id)
+                                // 点击模型时打开对应的官方网站
+                                if (model.url && model.url !== '#') {
+                                  window.open(model.url, '_blank')
+                                }
+                              }}
+                              className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                                selectedModels.has(model.id)
+                                  ? 'text-white shadow-md'
+                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                              }`}
+                              style={{
+                                backgroundColor: selectedModels.has(model.id) ? model.selectedColor : undefined
+                              }}
+                              title={`${model.name} - 点击访问官方网站`}
+                            >
+                              {model.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
                   </div>
                   
                   {/* 字数统计 */}
@@ -319,6 +341,8 @@ function NormalMode() {
             </div>
           </div>
         </div>
+
+
        </div>
      </div>
    )

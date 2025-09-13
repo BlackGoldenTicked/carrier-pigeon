@@ -12,12 +12,32 @@ export interface QuickLink {
 }
 
 /**
+ * AI模型类型枚举
+ */
+export enum AIModelType {
+  LANGUAGE = 'language',
+  MULTIMEDIA = 'multimedia'
+}
+
+/**
  * AI模型数据类型定义
  */
 export interface AIModel {
   id: string
   name: string
-  color: string
+  type: AIModelType
+  url: string
+  selectedColor: string
+}
+
+/**
+ * AI模型分类配置接口
+ */
+export interface AIModelCategory {
+  type: AIModelType
+  title: string
+  description: string
+  models: AIModel[]
 }
 
 /**
@@ -36,7 +56,7 @@ export interface ModeConfig {
 export class ConfigLoader {
   private static instance: ConfigLoader
   private quickLinksData: QuickLink[][] | null = null
-  private aiModelsData: AIModel[] | null = null
+  private aiModelsData: AIModelCategory[] | null = null
   private modeConfigData: Record<string, ModeConfig> | null = null
   private tabModeData: Record<string, string> | null = null
 
@@ -63,13 +83,13 @@ export class ConfigLoader {
 
   /**
    * 获取AI模型配置
-   * @returns AI模型数据数组
+   * @returns AI模型分类数据数组
    */
-  public getAIModels(): AIModel[] {
+  public getAIModels(): AIModelCategory[] {
     if (!this.aiModelsData) {
-      this.aiModelsData = aiModelsConfig.aiModels
+      this.aiModelsData = (aiModelsConfig as any).aiModelCategories || []
     }
-    return this.aiModelsData
+    return this.aiModelsData || []
   }
 
   /**
