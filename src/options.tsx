@@ -262,7 +262,7 @@ function OptionsPage() {
   const addBasicModel = () => {
     // 确定要添加的模型类型
     const targetType = modelFilter === 'all' ? 'language' : 
-                      (modelFilter === 'llm' ? 'language' : 'multimedia')
+                      (modelFilter === 'language' ? 'language' : 'multimedia')
     
     // 检查该类型的模型数量是否已达到限制
     const modelsOfType = config.basicModels.filter(model => model.type === targetType)
@@ -779,7 +779,7 @@ function OptionsPage() {
                           return `${typeName}: ${modelsOfType.length}/6`
                         })() : (() => {
                           const targetType = modelFilter === 'all' ? 'language' : 
-                                            (modelFilter === 'llm' ? 'language' : 'multimedia')
+                                            (modelFilter === 'language' ? 'language' : 'multimedia')
                           const modelsOfType = config.basicModels.filter(model => model.type === targetType)
                           const typeName = getBasicTypeDisplayName(targetType)
                           return `${typeName}: ${modelsOfType.length}/6`

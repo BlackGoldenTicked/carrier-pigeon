@@ -88,15 +88,39 @@ function initTheme() {
 initTheme()
 
 /**
- * 从JSON配置文件加载数据
+ * 配置数据类型定义
+ */
+interface LinkConfig {
+  id: number
+  title: string
+  url: string
+}
+
+interface BasicModelConfig {
+  id: string
+  name: string
+  type: 'language' | 'multimedia'
+  url: string
+  enabled: boolean
+  selectedColor?: string
+}
+
+interface ConfigData {
+  links: LinkConfig[][]
+  basicModels: BasicModelConfig[]
+  theme: 'light' | 'dark'
+}
+
+/**
+ * 从JSON配置文件加载默认数据
  */
 const TabMode = getTabMode()
-const quickLinks = getQuickLinks()
-const aiModelCategories = getAIModels()
+const defaultQuickLinks = getQuickLinks()
+const defaultAIModelCategories = getAIModels()
 const modeConfig = getModeConfig()
 
 // 扁平化所有AI模型用于兼容性
-const allAIModels = aiModelCategories.flatMap(category => category.models)
+const allAIModels = defaultAIModelCategories.flatMap(category => category.models)
 
 /**
  * 一般模式组件
@@ -107,6 +131,80 @@ function NormalMode() {
   const [inputText, setInputText] = useState('')
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionStart, setSelectionStart] = useState(null)
+  const [config, setConfig] = useState<ConfigData>({
+    links: defaultQuickLinks,
+    basicModels: [],
+    theme: 'light'
+  })
+
+  /**
+   * 从storage加载配置
+   */
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        // 使用与options.tsx相同的存储位置
+        const result = await chrome.storage.sync.get(['mytab-config'])
+        if (result['mytab-config']) {
+          setConfig(result['mytab-config'])
+        } else {
+          // 如果没有配置，使用默认配置并保存
+           const defaultConfig: ConfigData = {
+             links: defaultQuickLinks,
+             basicModels: defaultAIModelCategories.flatMap(category => 
+               category.models.map(model => ({
+                 id: model.id,
+                 name: model.name,
+                 type: model.type as 'language' | 'multimedia',
+                 url: model.url,
+                 enabled: true,
+                 selectedColor: model.selectedColor
+               }))
+             ),
+             theme: 'light' as const
+           }
+          setConfig(defaultConfig)
+          await chrome.storage.sync.set({ 'mytab-config': defaultConfig })
+        }
+      } catch (error) {
+        console.error('Failed to load config:', error)
+        // 使用默认配置作为fallback
+         const fallbackConfig: ConfigData = {
+           links: defaultQuickLinks,
+           basicModels: defaultAIModelCategories.flatMap(category => 
+             category.models.map(model => ({
+               id: model.id,
+               name: model.name,
+               type: model.type as 'language' | 'multimedia',
+               url: model.url,
+               enabled: true,
+               selectedColor: model.selectedColor
+             }))
+           ),
+           theme: 'light' as const
+         }
+         setConfig(fallbackConfig)
+      }
+    }
+
+    loadConfig()
+
+    // 监听storage变化，实现实时同步
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      // 只监听sync存储区域的变化
+      if (areaName === 'sync' && changes['mytab-config'] && changes['mytab-config'].newValue) {
+        setConfig(changes['mytab-config'].newValue)
+      }
+    }
+
+    // 添加storage变化监听器
+    chrome.storage.onChanged.addListener(handleStorageChange)
+
+    // 清理监听器
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange)
+    }
+  }, [])
 
 
   /**
@@ -137,7 +235,7 @@ function NormalMode() {
    * 打开多个链接
    */
   const openMultipleLinks = (linkIds: number[]) => {
-    const allLinks = [...quickLinks[0], ...quickLinks[1]]
+    const allLinks = [...config.links[0], ...config.links[1]]
     linkIds.forEach((id: number) => {
       const link = allLinks.find(l => l.id === id)
       if (link) {
@@ -216,14 +314,14 @@ function NormalMode() {
 
           {/* 快捷链接 */}
            <div className="space-y-4">
-             {quickLinks.map((row, rowIndex) => (
+             {config.links.map((row: LinkConfig[], rowIndex: number) => (
                <AnimatedBorderContainer
                  key={rowIndex}
                  className="flex justify-center space-x-6 max-w-6xl mx-auto"
                  autoPlay={true}
                  interval={3000}
                >
-                 {row.map((link) => (
+                 {row.map((link: LinkConfig) => (
                    <div key={link.id} className="relative">
                      <AdvancedMovingBorder
                        borderRadius="0.75rem"
@@ -266,38 +364,69 @@ function NormalMode() {
                 {/* 模型选择区域 */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex flex-col space-y-3">
-                    {aiModelCategories.map((category) => (
-                      <div key={category.type} className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]">
-                          {category.title}:
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {category.models.map((model) => (
-                            <button
-                              key={model.id}
-                              onClick={() => {
-                                toggleModel(model.id)
-                                // 点击模型时打开对应的官方网站
-                                if (model.url && model.url !== '#') {
-                                  window.open(model.url, '_blank')
-                                }
-                              }}
-                              className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                                selectedModels.has(model.id)
-                                  ? 'text-white shadow-md'
-                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                              }`}
-                              style={{
-                                backgroundColor: selectedModels.has(model.id) ? model.selectedColor : undefined
-                              }}
-                              title={`${model.name} - 点击访问官方网站`}
-                            >
-                              {model.name}
-                            </button>
-                          ))}
-                        </div>
+                    {/* 语言模型 */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]">
+                        语言模型:
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {config.basicModels.filter(model => model.type === 'language' && model.enabled).map((model: BasicModelConfig) => (
+                          <button
+                            key={model.id}
+                            onClick={() => {
+                              toggleModel(model.id)
+                              // 点击模型时打开对应的官方网站
+                              if (model.url && model.url !== '#') {
+                                window.open(model.url, '_blank')
+                              }
+                            }}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                              selectedModels.has(model.id)
+                                ? 'text-white shadow-md'
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                            }`}
+                            style={{
+                              backgroundColor: selectedModels.has(model.id) ? model.selectedColor : undefined
+                            }}
+                            title={`${model.name} - 点击访问官方网站`}
+                          >
+                            {model.name}
+                          </button>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                    
+                    {/* 多媒体模型 */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]">
+                        音视频:
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {config.basicModels.filter(model => model.type === 'multimedia' && model.enabled).map((model: BasicModelConfig) => (
+                          <button
+                            key={model.id}
+                            onClick={() => {
+                              toggleModel(model.id)
+                              // 点击模型时打开对应的官方网站
+                              if (model.url && model.url !== '#') {
+                                window.open(model.url, '_blank')
+                              }
+                            }}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                              selectedModels.has(model.id)
+                                ? 'text-white shadow-md'
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                            }`}
+                            style={{
+                              backgroundColor: selectedModels.has(model.id) ? model.selectedColor : undefined
+                            }}
+                            title={`${model.name} - 点击访问官方网站`}
+                          >
+                            {model.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
                   </div>
                   
