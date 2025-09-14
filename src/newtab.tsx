@@ -271,19 +271,165 @@ function NormalMode() {
   }
 
   /**
-   * 处理发送
+   * 处理发送 - 自动化流程
    */
-  const handleSend = () => {
-    if (inputText.trim()) {
-      console.log('发送消息:', inputText)
-      console.log('选中模型:', Array.from(selectedModels))
-      // 这里可以添加实际的发送逻辑
+  const handleSend = async () => {
+    if (!inputText.trim()) {
+      return
+    }
+
+    console.log('🔍 [DEBUG] handleSend - 输入的文本:', inputText)
+    console.log('🔍 [DEBUG] handleSend - 文本长度:', inputText.length)
+
+    // 获取选中的模型
+    const selectedModelIds = Array.from(selectedModels)
+    if (selectedModelIds.length === 0) {
+      alert('请至少选择一个模型')
+      return
+    }
+
+    // 获取选中模型的详细信息
+    const selectedModelDetails = config.basicModels.filter(model => 
+      selectedModelIds.includes(model.id) && model.enabled
+    )
+
+    if (selectedModelDetails.length === 0) {
+      alert('没有可用的模型，请检查模型配置')
+      return
+    }
+
+    try {
+      // 复制文本到剪贴板
+      await navigator.clipboard.writeText(inputText)
+      console.log('🔍 [DEBUG] handleSend - 已复制到剪贴板的文本:', inputText)
+      
+      // 显示操作提示
+      const notification = document.createElement('div')
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300'
+      notification.innerHTML = `
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          <span>💬 正在打开 ${selectedModelDetails.length} 个AI页面并自动填充发送...</span>
+        </div>
+      `
+      document.body.appendChild(notification)
+      
+      // 为每个选中的模型打开新标签页，并传递文本
+      for (const model of selectedModelDetails) {
+        console.log('🔍 [DEBUG] handleSend - 准备为模型打开页面:', model.name, '传递文本:', inputText)
+        await openModelPage(model, inputText)
+        // 添加延迟避免浏览器阻止多个弹窗
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+
+      // 3秒后移除通知
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.style.opacity = '0'
+          setTimeout(() => {
+            document.body.removeChild(notification)
+          }, 300)
+        }
+      }, 3000)
+
+      // 清空输入框
+      setInputText('')
+      // 清空选中的模型
+      setSelectedModels(new Set())
+      
+      console.log(`一般模式：已为 ${selectedModelDetails.length} 个AI模型打开页面并自动填充发送`)
+    } catch (error) {
+      console.error('自动化流程执行失败:', error)
+      alert('操作失败，请检查浏览器权限设置')
+    }
+  }
+
+  /**
+   * 为指定模型打开页面并自动填充发送
+   * 一般模式：打开AI页面后自动填充文本并发送
+   */
+  const openModelPage = async (model: BasicModelConfig, text?: string) => {
+    try {
+      console.log(`🔍 [DEBUG] openModelPage - 正在打开 ${model.name} 页面:`, model.url)
+      console.log(`🔍 [DEBUG] openModelPage - 接收到的文本参数:`, text)
+      console.log(`🔍 [DEBUG] openModelPage - 文本是否存在:`, !!text)
+      console.log(`🔍 [DEBUG] openModelPage - 文本是否非空:`, text && text.trim())
+      
+      // 如果有文本内容，针对不同模型进行特殊处理
+       if (text && text.trim()) {
+         // 支持自动填充的模型列表
+          const supportedModels: Record<string, { url: string[]; action: string }> = {
+            'chatgpt': { url: ['chatgpt.com', 'chat.openai.com'], action: 'autoFillAndSend' },
+            'gpt-4': { url: ['chatgpt.com', 'chat.openai.com'], action: 'autoFillAndSend' },
+            'claude-3': { url: ['claude.ai'], action: 'autoFillAndSend' },
+            'claude': { url: ['claude.ai'], action: 'autoFillAndSend' },
+            'gemini': { url: ['gemini.google.com'], action: 'autoFillAndSend' }
+          }
+          
+          // 检查是否为支持的模型
+          const modelConfig = supportedModels[model.id] || 
+            Object.values(supportedModels).find(config => 
+              config.url.some(urlPattern => model.url.includes(urlPattern))
+            )
+         
+         if (modelConfig) {
+           // 支持的模型使用background script打开标签页并发送消息
+           try {
+             const messageToSend = {
+               action: 'openTabAndSendMessage',
+               url: model.url,
+               message: {
+                 action: modelConfig.action,
+                 text: text
+               }
+             }
+             console.log(`🔍 [DEBUG] openModelPage - 准备发送消息到background:`, messageToSend)
+             
+             const response = await new Promise((resolve) => {
+               chrome.runtime.sendMessage(messageToSend, resolve)
+             })
+             console.log(`🔍 [DEBUG] openModelPage - ${model.name}自动填充和发送响应:`, response)
+           } catch (error) {
+             console.error(`${model.name}自动填充和发送失败:`, error)
+             // 降级处理：直接打开页面并复制文本
+             window.open(model.url, '_blank')
+             await navigator.clipboard.writeText(text)
+           }
+         } else {
+           // 不支持的模型先打开页面，然后复制文本到剪贴板
+           window.open(model.url, '_blank')
+           await navigator.clipboard.writeText(text)
+           console.log(`已复制文本到剪贴板，请在 ${model.name} 页面手动粘贴`)
+         }
+      } else {
+        // 没有文本内容，直接打开页面
+        window.open(model.url, '_blank')
+        console.log(`已打开 ${model.name} 页面`)
+      }
+    } catch (error) {
+      console.error(`打开 ${model.name} 页面失败:`, error)
+      // 降级处理：直接打开页面
+      window.open(model.url, '_blank')
     }
   }
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-6 py-12">
+        {/* 使用说明 */}
+        <div className="mb-8 text-center">
+          <div className="inline-flex items-center px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg text-sm">
+            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <span>
+              <strong>使用说明：</strong>点击发送后会自动复制文本到剪贴板并打开选中的AI模型页面。支持的模型（Gemini、ChatGPT、Claude等）会自动填充文本并发送，其他模型请手动粘贴。
+            </span>
+          </div>
+        </div>
+        
         {/* 快捷链接区域 */}
         <div className="mb-16">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-8 text-center">快捷访问</h2>
