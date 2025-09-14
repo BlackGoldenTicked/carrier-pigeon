@@ -12,6 +12,8 @@ export const config: PlasmoCSConfig = {
 
 // Claude选择器配置
 const INPUT_SELECTORS = [
+  'div[contenteditable="true"][role="textbox"][aria-label="Write your prompt to Claude"]',
+  'div[contenteditable="true"][role="textbox"]',
   'div[contenteditable="true"][data-testid="chat-input"]',
   'div[contenteditable="true"] p',
   'div[contenteditable="true"]',
@@ -20,6 +22,7 @@ const INPUT_SELECTORS = [
 ]
 
 const SUBMIT_SELECTORS = [
+  'button[aria-label="Send message"]',
   'button[aria-label="Send Message"]',
   'button[data-testid="send-button"]',
   'button:has(svg[data-icon="arrow-up"])',
