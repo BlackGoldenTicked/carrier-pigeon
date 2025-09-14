@@ -402,9 +402,10 @@ function NormalMode() {
           const supportedModels: Record<string, { url: string[]; action: string }> = {
             'chatgpt': { url: ['chatgpt.com', 'chat.openai.com'], action: 'autoFillAndSend' },
             'gpt-4': { url: ['chatgpt.com', 'chat.openai.com'], action: 'autoFillAndSend' },
-            'claude-3': { url: ['claude.ai'], action: 'autoFillAndSend' },
-            'claude': { url: ['claude.ai'], action: 'autoFillAndSend' },
-            'gemini': { url: ['gemini.google.com'], action: 'autoFillAndSend' }
+            'claude-3': { url: ['claude.ai'], action: 'fillAndSend' },
+            'claude': { url: ['claude.ai'], action: 'fillAndSend' },
+            'kimi': { url: ['kimi.moonshot.cn'], action: 'fillAndSend' },
+            'gemini': { url: ['gemini.google.com'], action: 'fillAndSend' }
           }
           
           // 检查是否为支持的模型
