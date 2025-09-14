@@ -521,10 +521,6 @@ function NormalMode() {
                             key={model.id}
                             onClick={() => {
                               toggleModel(model.id)
-                              // 点击模型时打开对应的官方网站
-                              if (model.url && model.url !== '#') {
-                                window.open(model.url, '_blank')
-                              }
                             }}
                             className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
                               selectedModels.has(model.id)
@@ -534,7 +530,7 @@ function NormalMode() {
                             style={{
                               backgroundColor: selectedModels.has(model.id) ? model.selectedColor : undefined
                             }}
-                            title={`${model.name} - 点击访问官方网站`}
+                            title={`${model.name} - 点击选择模型`}
                           >
                             {model.name}
                           </button>
@@ -553,10 +549,6 @@ function NormalMode() {
                             key={model.id}
                             onClick={() => {
                               toggleModel(model.id)
-                              // 点击模型时打开对应的官方网站
-                              if (model.url && model.url !== '#') {
-                                window.open(model.url, '_blank')
-                              }
                             }}
                             className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
                               selectedModels.has(model.id)
@@ -566,7 +558,7 @@ function NormalMode() {
                             style={{
                               backgroundColor: selectedModels.has(model.id) ? model.selectedColor : undefined
                             }}
-                            title={`${model.name} - 点击访问官方网站`}
+                            title={`${model.name} - 点击选择模型`}
                           >
                             {model.name}
                           </button>
