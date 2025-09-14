@@ -138,52 +138,91 @@ function NormalMode() {
   })
 
   /**
-   * 从storage加载配置
+   * 智能合并配置数据
+   * @param storedConfig 存储中的配置
+   * @param jsonConfig JSON文件中的配置
+   * @returns 合并后的配置
+   */
+  const mergeConfigs = (storedConfig: ConfigData | null, jsonConfig: ConfigData): ConfigData => {
+    if (!storedConfig) {
+      return jsonConfig
+    }
+
+    // 智能合并链接：保留用户自定义的链接，补充JSON中新增的链接
+    const mergedLinks = [...jsonConfig.links]
+    
+    // 智能合并基础模型：保留用户的启用状态和颜色设置
+    const mergedBasicModels = jsonConfig.basicModels.map(jsonModel => {
+      const storedModel = storedConfig.basicModels.find(m => m.id === jsonModel.id)
+      return storedModel ? {
+        ...jsonModel,
+        enabled: storedModel.enabled,
+        selectedColor: storedModel.selectedColor
+      } : jsonModel
+    })
+
+    return {
+      ...storedConfig,
+      links: mergedLinks,
+      basicModels: mergedBasicModels
+    }
+  }
+
+  /**
+   * 从storage加载配置并智能合并JSON数据
    */
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        // 使用与options.tsx相同的存储位置
-        const result = await chrome.storage.sync.get(['mytab-config'])
-        if (result['mytab-config']) {
-          setConfig(result['mytab-config'])
-        } else {
-          // 如果没有配置，使用默认配置并保存
-           const defaultConfig: ConfigData = {
-             links: defaultQuickLinks,
-             basicModels: defaultAIModelCategories.flatMap(category => 
-               category.models.map(model => ({
-                 id: model.id,
-                 name: model.name,
-                 type: model.type as 'language' | 'multimedia',
-                 url: model.url,
-                 enabled: true,
-                 selectedColor: model.selectedColor
-               }))
-             ),
-             theme: 'light' as const
-           }
-          setConfig(defaultConfig)
-          await chrome.storage.sync.set({ 'mytab-config': defaultConfig })
+        // 准备JSON默认配置
+        const jsonDefaultConfig: ConfigData = {
+          links: defaultQuickLinks,
+          basicModels: defaultAIModelCategories.flatMap(category => 
+            category.models.map(model => ({
+              id: model.id,
+              name: model.name,
+              type: model.type as 'language' | 'multimedia',
+              url: model.url,
+              enabled: true,
+              selectedColor: model.selectedColor
+            }))
+          ),
+          theme: 'light' as const
         }
+
+        // 从storage加载配置
+        const result = await chrome.storage.sync.get(['mytab-config'])
+        const storedConfig = result['mytab-config'] || null
+        
+        // 智能合并配置
+        const mergedConfig = mergeConfigs(storedConfig, jsonDefaultConfig)
+        
+        setConfig(mergedConfig)
+        
+        // 如果配置有变化，同步到storage
+        if (!storedConfig || JSON.stringify(storedConfig) !== JSON.stringify(mergedConfig)) {
+          await chrome.storage.sync.set({ 'mytab-config': mergedConfig })
+          console.log('✅ 新标签页配置已同步到存储')
+        }
+        
       } catch (error) {
         console.error('Failed to load config:', error)
         // 使用默认配置作为fallback
-         const fallbackConfig: ConfigData = {
-           links: defaultQuickLinks,
-           basicModels: defaultAIModelCategories.flatMap(category => 
-             category.models.map(model => ({
-               id: model.id,
-               name: model.name,
-               type: model.type as 'language' | 'multimedia',
-               url: model.url,
-               enabled: true,
-               selectedColor: model.selectedColor
-             }))
-           ),
-           theme: 'light' as const
-         }
-         setConfig(fallbackConfig)
+        const fallbackConfig: ConfigData = {
+          links: defaultQuickLinks,
+          basicModels: defaultAIModelCategories.flatMap(category => 
+            category.models.map(model => ({
+              id: model.id,
+              name: model.name,
+              type: model.type as 'language' | 'multimedia',
+              url: model.url,
+              enabled: true,
+              selectedColor: model.selectedColor
+            }))
+          ),
+          theme: 'light' as const
+        }
+        setConfig(fallbackConfig)
       }
     }
 

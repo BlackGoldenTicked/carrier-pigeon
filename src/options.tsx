@@ -137,26 +137,85 @@ function OptionsPage() {
   }, [config.theme])
 
   /**
-   * 从 Chrome 存储加载配置
+   * 智能合并JSON文件和Chrome存储的配置数据
+   * @param jsonConfig JSON文件中的默认配置
+   * @param storageConfig Chrome存储中的用户配置
+   * @returns 合并后的配置
+   */
+  const mergeConfigs = (jsonConfig: ConfigData, storageConfig: Partial<ConfigData>): ConfigData => {
+    // 如果存储中没有配置，直接使用JSON默认配置
+    if (!storageConfig || Object.keys(storageConfig).length === 0) {
+      return jsonConfig
+    }
+
+    // 智能合并链接数据：优先使用存储中的数据，但确保结构完整
+    const mergedLinks = storageConfig.links && storageConfig.links.length > 0 
+      ? storageConfig.links 
+      : jsonConfig.links
+
+    // 智能合并基础模型数据：合并JSON中的新模型和存储中的用户设置
+    const mergedBasicModels = (() => {
+      const jsonModels = jsonConfig.basicModels || []
+      const storageModels = storageConfig.basicModels || []
+      
+      // 创建存储模型的映射表
+      const storageModelMap = new Map(storageModels.map(model => [model.id, model]))
+      
+      // 合并：JSON中的模型为基础，应用存储中的用户设置
+      return jsonModels.map(jsonModel => {
+        const storageModel = storageModelMap.get(jsonModel.id)
+        return storageModel ? { ...jsonModel, ...storageModel } : jsonModel
+      })
+    })()
+
+    return {
+      ...jsonConfig,
+      ...storageConfig,
+      links: mergedLinks,
+      basicModels: mergedBasicModels
+    }
+  }
+
+  /**
+   * 从 Chrome 存储加载配置并智能合并
    */
   useEffect(() => {
     const loadConfig = async () => {
       try {
+        let storageConfig: Partial<ConfigData> = {}
+        
         if (chrome?.storage?.sync) {
           const result = await chrome.storage.sync.get(['mytab-config'])
           if (result['mytab-config']) {
-            setConfig({ ...defaultConfig, ...result['mytab-config'] })
+            storageConfig = result['mytab-config']
           }
         } else {
           // 降级到 localStorage
           const savedConfig = localStorage.getItem('mytab-config')
           if (savedConfig) {
-            const parsed = JSON.parse(savedConfig)
-            setConfig({ ...defaultConfig, ...parsed })
+            storageConfig = JSON.parse(savedConfig)
           }
         }
+        
+        // 智能合并配置
+        const mergedConfig = mergeConfigs(defaultConfig, storageConfig)
+        setConfig(mergedConfig)
+        
+        // 如果合并后的配置与存储中的不同，更新存储
+        const configChanged = JSON.stringify(mergedConfig) !== JSON.stringify(storageConfig)
+        if (configChanged) {
+          if (chrome?.storage?.sync) {
+            await chrome.storage.sync.set({ 'mytab-config': mergedConfig })
+          } else {
+            localStorage.setItem('mytab-config', JSON.stringify(mergedConfig))
+          }
+          console.log('✅ 配置已同步更新')
+        }
+        
       } catch (error) {
         console.error('配置加载失败:', error)
+        // 使用默认配置作为fallback
+        setConfig(defaultConfig)
       }
     }
     
@@ -466,6 +525,84 @@ function OptionsPage() {
   }
 
   /**
+   * 同步JSON配置 - 从JSON文件重新加载最新配置
+   */
+  /**
+   * 检查JSON文件是否有更新
+   * @returns 是否检测到更新
+   */
+  const checkJSONUpdates = (): boolean => {
+    try {
+      const currentJSONLinks = loadLinksFromJSON()
+      const currentJSONModels = loadBasicModelsFromJSON()
+      
+      // 比较当前配置中的链接和JSON文件中的链接
+      const linksChanged = JSON.stringify(currentJSONLinks) !== JSON.stringify(config.links)
+      const modelsChanged = JSON.stringify(currentJSONModels) !== JSON.stringify(config.basicModels)
+      
+      return linksChanged || modelsChanged
+    } catch (error) {
+      console.error('检查JSON更新失败:', error)
+      return false
+    }
+  }
+
+  /**
+   * 从JSON同步配置到Chrome存储
+   */
+  const syncJSONConfig = () => {
+    const hasUpdates = checkJSONUpdates()
+    const confirmMessage = hasUpdates 
+      ? '检测到JSON文件有更新，确定要同步最新配置吗？这将覆盖当前的快捷链接和基础模型配置。'
+      : '确定要从JSON文件重新加载配置吗？这将覆盖当前的快捷链接和基础模型配置。'
+      
+    if (confirm(confirmMessage)) {
+      try {
+        // 重新加载JSON配置
+        const freshJSONConfig = {
+          links: loadLinksFromJSON(),
+          basicModels: loadBasicModelsFromJSON()
+        }
+        
+        // 智能合并：保留用户的个人设置，更新JSON数据
+        const syncedConfig: ConfigData = {
+          ...config,
+          ...freshJSONConfig
+        }
+        
+        setConfig(syncedConfig)
+        saveConfig(syncedConfig)
+        setSaveStatus('saved')
+        setTimeout(() => setSaveStatus('idle'), 2000)
+        
+        console.log('✅ JSON配置同步完成')
+      } catch (error) {
+        console.error('同步失败:', error)
+        setSaveStatus('error')
+        setTimeout(() => setSaveStatus('idle'), 2000)
+      }
+    }
+  }
+
+  /**
+   * 保存当前配置到JSON文件格式 - 导出当前链接配置为JSON格式
+   */
+  const saveToJSONFormat = () => {
+    const jsonConfig = {
+      quickLinks: config.links
+    }
+    const dataStr = JSON.stringify(jsonConfig, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'quickLinks.json'
+    link.click()
+    URL.revokeObjectURL(url)
+    alert('快捷链接配置已导出为 quickLinks.json 文件，请手动替换 src/config/quickLinks.json 文件以保持同步。')
+  }
+
+  /**
    * 过滤Pro模型
    */
   const filteredModels = config.models.filter(model => 
@@ -627,6 +764,20 @@ function OptionsPage() {
                       </label>
                       
                       <button
+                        onClick={syncJSONConfig}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        从JSON同步
+                      </button>
+                      
+                      <button
+                        onClick={saveToJSONFormat}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                      >
+                        保存到JSON
+                      </button>
+                      
+                      <button
                         onClick={resetConfig}
                         className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                       >
@@ -635,7 +786,9 @@ function OptionsPage() {
                     </div>
                     
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      配置数据存储在 Chrome 同步存储中，会在您的设备间自动同步。
+                      配置数据存储在 Chrome 同步存储中，会在您的设备间自动同步。<br/>
+                      • "从JSON同步"：从配置文件重新加载最新的快捷链接和基础模型<br/>
+                      • "保存到JSON"：将当前配置导出为JSON文件，可手动替换源文件保持同步
                     </p>
                   </div>
                 </div>
@@ -654,9 +807,16 @@ function OptionsPage() {
                   </button>
                 </div>
                 
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                  点击单元格直接编辑，失去焦点自动保存。最多支持两行各5个链接。
-                </p>
+                <div className="mb-6">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    点击单元格直接编辑，失去焦点自动保存。最多支持两行各5个链接。
+                  </p>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      ⚠️ 注意：在此处修改的链接只保存到浏览器存储中。如需与源代码保持同步，请在"数据管理"页面使用"保存到JSON"功能。
+                    </p>
+                  </div>
+                </div>
 
                 {/* 链接表格 */}
                 <div className="space-y-8">
