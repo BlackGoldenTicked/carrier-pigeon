@@ -27,11 +27,39 @@
           "selectedColor": "#4285f4"
         },
         {
-          "id": "llama",
-          "name": "Llama",
+          "id": "kimi",
+          "name": "Kimi",
           "type": "language",
-          "url": "https://llama.meta.com",
-          "selectedColor": "#7c3aed"
+          "url": "https://kimi.moonshot.cn",
+          "selectedColor": "#ff9800"
+        },
+        {
+          "id": "tongyi",
+          "name": "通义千问",
+          "type": "language",
+          "url": "https://www.tongyi.com/",
+          "selectedColor": "#ff6600"
+        },
+        {
+          "id": "wenxin",
+          "name": "文心一言",
+          "type": "language",
+          "url": "https://yiyan.baidu.com",
+          "selectedColor": "#2932e1"
+        },
+        {
+          "id": "yuanbao",
+          "name": "元宝",
+          "type": "language",
+          "url": "https://yuanbao.tencent.com",
+          "selectedColor": "#07c160"
+        },
+        {
+          "id": "deepseek",
+          "name": "DeepSeek",
+          "type": "language",
+          "url": "https://chat.deepseek.com",
+          "selectedColor": "#1a1a1a"
         }
       ]
     },
