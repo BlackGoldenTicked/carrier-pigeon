@@ -400,19 +400,32 @@ function NormalMode() {
        if (text && text.trim()) {
          // 支持自动填充的模型列表
           const supportedModels: Record<string, { url: string[]; action: string }> = {
-            'chatgpt': { url: ['chatgpt.com', 'chat.openai.com'], action: 'autoFillAndSend' },
             'gpt-4': { url: ['chatgpt.com', 'chat.openai.com'], action: 'autoFillAndSend' },
             'claude-3': { url: ['claude.ai'], action: 'fillAndSend' },
-            'claude': { url: ['claude.ai'], action: 'fillAndSend' },
             'kimi': { url: ['kimi.moonshot.cn'], action: 'fillAndSend' },
-            'gemini': { url: ['gemini.google.com'], action: 'fillAndSend' }
+            'gemini': { url: ['gemini.google.com'], action: 'fillAndSend' },
+            'yuanbao': { url: ['yuanbao.tencent.com'], action: 'fillAndSend' },
+            'tongyi': {
+      url: ['tongyi.aliyun.com', 'qianwen.aliyun.com'],
+      action: 'fillAndSend'
+    },
+            'wenxin': { url: ['yiyan.baidu.com', 'wenxin.baidu.com'], action: 'fillAndSend' },
+            'deepseek': { url: ['chat.deepseek.com'], action: 'fillAndSend' }
           }
           
-          // 检查是否为支持的模型
-          const modelConfig = supportedModels[model.id] || 
-            Object.values(supportedModels).find(config => 
-              config.url.some(urlPattern => model.url.includes(urlPattern))
+          // 检查是否为支持的模型 - 优先使用精确ID匹配
+          let modelConfig: { url: string[]; action: string } | undefined = supportedModels[model.id]
+          
+          // 如果没有精确匹配，则检查URL模式匹配（更严格的匹配）
+          if (!modelConfig) {
+            modelConfig = Object.values(supportedModels).find(config => 
+              config.url.some(urlPattern => {
+                // 使用更严格的URL匹配：检查域名部分
+                const modelDomain = model.url.replace(/^https?:\/\//, '').split('/')[0]
+                return modelDomain.includes(urlPattern) || urlPattern.includes(modelDomain)
+              })
             )
+          }
          
          if (modelConfig) {
            // 支持的模型使用background script打开标签页并发送消息
