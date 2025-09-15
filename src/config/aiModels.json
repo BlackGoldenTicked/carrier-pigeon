@@ -14,7 +14,7 @@
         },
         {
           "id": "claude-3",
-          "name": "Claude 3",
+          "name": "Claude",
           "type": "language",
           "url": "https://claude.ai",
           "selectedColor": "#ff6b35"
