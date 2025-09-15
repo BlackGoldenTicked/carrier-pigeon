@@ -90,7 +90,28 @@ function setupMessageListener() {
   console.log('[Claude] 设置消息监听器')
   
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log('[Claude] 收到消息:', message)
+    console.log(`🔍 [DEBUG] Claude content script收到消息:`, message)
+    console.log(`🔍 [DEBUG] Claude 消息动作:`, message.action)
+    console.log(`🔍 [DEBUG] Claude 消息文本:`, message.text)
+    console.log(`🔍 [DEBUG] Claude 文本长度:`, message.text ? message.text.length : 0)
+    
+    // 支持标准的autoFillAndSend动作
+    if (message.action === 'autoFillAndSend' && message.text) {
+      console.log(`🔍 [DEBUG] Claude: 开始自动填充和发送流程`)
+      handleFillAndSend(message.text)
+        .then(result => {
+          console.log(`🔍 [DEBUG] Claude: 填充并发送结果:`, result)
+          sendResponse({ 
+            success: result.success, 
+            message: result.success ? '填充并发送成功' : '操作失败' 
+          })
+        })
+        .catch(error => {
+          console.error(`🔍 [DEBUG] Claude: 填充并发送错误:`, error)
+          sendResponse({ success: false, message: error.message })
+        })
+      return true
+    }
     
     if (message.action === 'fillText') {
       handleFillText(message.text, message.autoSend || false)
