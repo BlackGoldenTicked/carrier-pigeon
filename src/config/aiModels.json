@@ -74,20 +74,6 @@
           "type": "multimedia",
           "url": "https://suno.com",
           "selectedColor": "#ff4081"
-        },
-        {
-          "id": "runway",
-          "name": "Runway ML",
-          "type": "multimedia",
-          "url": "https://runwayml.com",
-          "selectedColor": "#00bcd4"
-        },
-        {
-          "id": "elevenlabs",
-          "name": "ElevenLabs",
-          "type": "multimedia",
-          "url": "https://elevenlabs.io",
-          "selectedColor": "#9c27b0"
         }
       ]
     }
