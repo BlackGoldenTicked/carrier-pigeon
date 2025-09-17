@@ -28,8 +28,8 @@
       {
         "id": 5,
         "title": "z",
-        "url": "https://www.chaordex.com",
-        "icon": "https://www.chaordex.com/favicon.ico"
+        "url": "https://z.ai",
+        "icon": "https://www.z.ai/favicon.ico"
       }
     ],
     [
@@ -42,8 +42,8 @@
       {
         "id": 7,
         "title": "Touzi",
-        "url": "https://touzi.ws",
-        "icon": "https://touzi.ws/favicon.ico"
+        "url": "https://touzi.com",
+        "icon": "https://touzi.com/favicon.ico"
       },
       {
         "id": 8,
@@ -60,8 +60,8 @@
       {
         "id": 10,
         "title": "Index",
-        "url": "https://in.chaordex.com",
-        "icon": "https://in.chaordex.com/favicon.ico"
+        "url": "https://bing.com",
+        "icon": "https://bing.com/favicon.ico"
       }
     ]
   ]
