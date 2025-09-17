@@ -4,54 +4,64 @@
       {
         "id": 1,
         "title": "Google",
-        "url": "https://www.google.com"
+        "url": "https://www.google.com",
+        "icon": "https://www.google.com/favicon.ico"
       },
       {
         "id": 2,
         "title": "GitHub",
-        "url": "https://github.com"
+        "url": "https://github.com",
+        "icon": "https://github.com/favicon.ico"
       },
       {
         "id": 3,
         "title": "YouTube",
-        "url": "https://www.youtube.com"
+        "url": "https://www.youtube.com",
+        "icon": "https://www.youtube.com/favicon.ico"
       },
       {
         "id": 4,
-        "title": "Twitter",
-        "url": "https://twitter.com"
+        "title": "X",
+        "url": "https://twitter.com",
+        "icon": "https://abs.twimg.com/favicons/twitter.3.ico"
       },
       {
         "id": 5,
-        "title": "Chaordex",
-        "url": "https://www.chaordex.com"
+        "title": "z",
+        "url": "https://www.chaordex.com",
+        "icon": "https://www.chaordex.com/favicon.ico"
       }
     ],
     [
       {
         "id": 6,
         "title": "Folo",
-        "url": "https://app.folo.is"
+        "url": "https://app.folo.is",
+        "icon": "https://app.folo.is/favicon.ico"
       },
       {
         "id": 7,
         "title": "Touzi",
-        "url": "https://touzi.ws"
+        "url": "https://touzi.ws",
+        "icon": "https://touzi.ws/favicon.ico"
       },
       {
         "id": 8,
         "title": "微信读书",
-        "url": "https://weread.qq.com/"
+        "url": "https://weread.qq.com/",
+        "icon": "https://weread.qq.com/favicon.ico"
       },
       {
         "id": 9,
         "title": "Notion",
-        "url": "https://www.notion.so"
+        "url": "https://www.notion.so",
+        "icon": "https://www.notion.so/images/favicon.ico"
       },
       {
         "id": 10,
         "title": "Index",
-        "url": "https://in.chaordex.com"
+        "url": "https://in.chaordex.com",
+        "icon": "https://in.chaordex.com/favicon.ico"
       }
     ]
   ]

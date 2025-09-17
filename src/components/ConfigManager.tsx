@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react'
+import { configLoader, QuickLink } from '../utils/configLoader'
 
 /**
- * 配置数据类型定义
+ * 链接配置接口（使用configLoader的QuickLink类型）
  */
-interface LinkConfig {
-  id: number
-  title: string
-  url: string
-}
+type LinkConfig = QuickLink
 
 interface ModelConfig {
   id: string
@@ -71,18 +68,28 @@ export default function ConfigManager({
   const [modelFilter, setModelFilter] = useState<'all' | 'llm' | 'voice' | 'image' | 'video'>('all')
 
   /**
-   * 从本地存储加载配置
+   * 从configLoader和本地存储加载配置
    */
   useEffect(() => {
+    // 从configLoader加载quickLinks数据
+    const quickLinksData = configLoader.getQuickLinks()
+    
+    // 从本地存储加载其他配置
     const savedConfig = localStorage.getItem('mytab-config')
+    let mergedConfig = { ...defaultConfig }
+    
     if (savedConfig) {
       try {
         const parsed = JSON.parse(savedConfig)
-        setConfig({ ...defaultConfig, ...parsed })
+        mergedConfig = { ...defaultConfig, ...parsed }
       } catch (error) {
         console.error('配置加载失败:', error)
       }
     }
+    
+    // 使用configLoader的quickLinks数据覆盖默认配置
+    mergedConfig.links = quickLinksData
+    setConfig(mergedConfig)
   }, [])
 
   /**
@@ -90,7 +97,10 @@ export default function ConfigManager({
    */
   const saveConfig = (newConfig: ConfigData) => {
     setConfig(newConfig)
+    // 保存完整配置到localStorage
     localStorage.setItem('mytab-config', JSON.stringify(newConfig))
+    // 单独保存quickLinks数据，供其他组件使用
+    localStorage.setItem('mytab-quicklinks', JSON.stringify(newConfig.links))
   }
 
   /**
@@ -223,8 +233,22 @@ export default function ConfigManager({
                       {row.map((link) => (
                         <div key={link.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
                           <div className="flex items-center space-x-3 mb-3">
-                            <div className="text-2xl">🔗</div>
-                            <div>
+                            <div className="w-8 h-8 flex items-center justify-center">
+                              {link.icon ? (
+                                <img 
+                                  src={link.icon} 
+                                  alt={`${link.title} icon`}
+                                  className="w-6 h-6 rounded"
+                                  onError={(e) => {
+                                    // 如果图标加载失败，隐藏图标
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <div className="text-2xl">🔗</div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
                               <div className="font-medium text-gray-800 dark:text-gray-200">{link.title}</div>
                               <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{link.url}</div>
                             </div>
@@ -335,6 +359,48 @@ export default function ConfigManager({
                   onChange={(e) => setEditingLink({ ...editingLink, url: e.target.value })}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">图标URL</label>
+                <div className="flex space-x-2">
+                  <input
+                    type="url"
+                    value={editingLink.icon || ''}
+                    onChange={(e) => setEditingLink({ ...editingLink, icon: e.target.value })}
+                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                    placeholder="输入图标URL或点击自动获取"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editingLink.url) {
+                        try {
+                          const domain = new URL(editingLink.url).hostname;
+                          const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+                          setEditingLink({ ...editingLink, icon: iconUrl });
+                        } catch (error) {
+                          console.error('Invalid URL:', editingLink.url);
+                        }
+                      }
+                    }}
+                    className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm"
+                  >
+                    自动获取
+                  </button>
+                </div>
+                {editingLink.icon && (
+                  <div className="mt-2 flex items-center space-x-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">预览:</span>
+                    <img 
+                      src={editingLink.icon} 
+                      alt="图标预览"
+                      className="w-6 h-6 rounded"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex space-x-3 mt-6">

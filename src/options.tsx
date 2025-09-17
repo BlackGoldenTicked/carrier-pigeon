@@ -3,6 +3,47 @@ import { createRoot } from 'react-dom/client'
 import './style.css'
 import { getQuickLinks, getAIModels, type QuickLink, type AIModel, type AIModelCategory } from './utils/configLoader'
 
+/**2 * 图标获取工具函数
+ */
+const IconUtils = {
+  /**
+   * 从URL提取域名
+   */
+  extractDomain: (url: string): string => {
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`)
+      return urlObj.hostname.replace(/^www\./, '')
+    } catch {
+      return url.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0]
+    }
+  },
+
+  /**
+   * 获取网站图标URL的多种方式
+   */
+  getFaviconUrl: (url: string): string => {
+    const domain = IconUtils.extractDomain(url)
+    
+    // 优先使用Google Favicon服务
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
+  },
+
+  /**
+   * 异步检查图标是否可用
+   */
+  checkIconAvailability: async (iconUrl: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => resolve(true)
+      img.onerror = () => resolve(false)
+      img.src = iconUrl
+      
+      // 3秒超时
+      setTimeout(() => resolve(false), 3000)
+    })
+  }
+}
+
 /**
  * 配置数据类型定义
  */
@@ -10,6 +51,7 @@ interface LinkConfig {
   id: number
   title: string
   url: string
+  icon?: string // 网站图标URL，可选字段
 }
 
 /**
@@ -626,9 +668,9 @@ function OptionsPage() {
       {/* 头部 */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex justify-between items-center py-2">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">MyTab 配置</h1>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">MyTab 配置</h1>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">管理您的新标签页设置</p>
             </div>
             
@@ -829,6 +871,7 @@ function OptionsPage() {
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                           <thead className="bg-gray-50 dark:bg-gray-700">
                             <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">图标</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">标题</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">URL</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">操作</th>
@@ -837,6 +880,70 @@ function OptionsPage() {
                           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {row.map((link) => (
                               <tr key={link.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                {/* 图标列 */}
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded">
+                                      {link.icon ? (
+                                        <img 
+                                          src={link.icon} 
+                                          alt={`${link.title} icon`}
+                                          className="w-6 h-6 rounded"
+                                          onError={(e) => {
+                                             // 图标加载失败时显示默认图标
+                                             const img = e.currentTarget as HTMLImageElement
+                                             const fallback = img.nextElementSibling as HTMLElement
+                                             img.style.display = 'none'
+                                             if (fallback) fallback.style.display = 'block'
+                                           }}
+                                        />
+                                      ) : null}
+                                      <div 
+                                        className={`w-6 h-6 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold ${link.icon ? 'hidden' : 'block'}`}
+                                      >
+                                        {link.title.charAt(0).toUpperCase()}
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col space-y-1">
+                                      <button
+                                        onClick={async () => {
+                                          const iconUrl = IconUtils.getFaviconUrl(link.url)
+                                          const newConfig = { ...config }
+                                          const targetLink = newConfig.links.flat().find(l => l.id === link.id)
+                                          if (targetLink) {
+                                            targetLink.icon = iconUrl
+                                            setConfig(newConfig)
+                                            await saveConfig(newConfig)
+                                          }
+                                        }}
+                                        className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                        title="自动获取图标"
+                                      >
+                                        自动
+                                      </button>
+                                      {editingCell?.type === 'link' && editingCell.id === link.id && editingCell.field === 'icon' ? (
+                                        <input
+                                          type="url"
+                                          defaultValue={link.icon || ''}
+                                          placeholder="图标URL"
+                                          onBlur={(e) => handleCellBlur(e.target.value)}
+                                          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+                                          className="w-20 p-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                          autoFocus
+                                        />
+                                      ) : (
+                                        <button
+                                          onClick={() => handleCellEdit('link', link.id, 'icon')}
+                                          className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                                          title="编辑图标URL"
+                                        >
+                                          编辑
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                {/* 标题列 */}
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   {editingCell?.type === 'link' && editingCell.id === link.id && editingCell.field === 'title' ? (
                                     <input

@@ -94,6 +94,7 @@ interface LinkConfig {
   id: number
   title: string
   url: string
+  icon?: string // 网站图标URL，可选字段
 }
 
 interface BasicModelConfig {
@@ -174,9 +175,21 @@ function NormalMode() {
   useEffect(() => {
     const loadConfig = async () => {
       try {
+        // 检查localStorage中是否有更新的quickLinks数据
+        let quickLinksData = defaultQuickLinks
+        const localQuickLinks = localStorage.getItem('mytab-quicklinks')
+        if (localQuickLinks) {
+          try {
+            quickLinksData = JSON.parse(localQuickLinks)
+            console.log('📋 从localStorage加载quickLinks数据')
+          } catch (error) {
+            console.error('解析localStorage中的quickLinks数据失败:', error)
+          }
+        }
+        
         // 准备JSON默认配置
         const jsonDefaultConfig: ConfigData = {
-          links: defaultQuickLinks,
+          links: quickLinksData, // 使用localStorage中的数据或默认数据
           basicModels: defaultAIModelCategories.flatMap(category => 
             category.models.map(model => ({
               id: model.id,
@@ -228,20 +241,38 @@ function NormalMode() {
 
     loadConfig()
 
-    // 监听storage变化，实现实时同步
-    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+    // 监听localStorage变化，实时更新quickLinks
+    const handleLocalStorageChange = (e: StorageEvent) => {
+      if (e.key === 'mytab-quicklinks' && e.newValue) {
+        try {
+          const newQuickLinks = JSON.parse(e.newValue)
+          setConfig(prevConfig => ({
+            ...prevConfig,
+            links: newQuickLinks
+          }))
+          console.log('📋 检测到quickLinks更新，已同步')
+        } catch (error) {
+          console.error('解析更新的quickLinks数据失败:', error)
+        }
+      }
+    }
+
+    // 监听chrome.storage变化，实现实时同步
+    const handleChromeStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
       // 只监听sync存储区域的变化
       if (areaName === 'sync' && changes['mytab-config'] && changes['mytab-config'].newValue) {
         setConfig(changes['mytab-config'].newValue)
       }
     }
 
-    // 添加storage变化监听器
-    chrome.storage.onChanged.addListener(handleStorageChange)
+    // 添加监听器
+    window.addEventListener('storage', handleLocalStorageChange)
+    chrome.storage.onChanged.addListener(handleChromeStorageChange)
 
     // 清理监听器
     return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange)
+      window.removeEventListener('storage', handleLocalStorageChange)
+      chrome.storage.onChanged.removeListener(handleChromeStorageChange)
     }
   }, [])
 
@@ -536,7 +567,20 @@ function NormalMode() {
                        duration={8000}
                        onClick={(e) => handleLinkClick(link, e)}
                      >
-                       {link.title}
+                       <div className="flex items-center justify-center space-x-2">
+                         {link.icon && (
+                           <img 
+                             src={link.icon} 
+                             alt={`${link.title} icon`}
+                             className="w-4 h-4 flex-shrink-0"
+                             onError={(e) => {
+                               // 如果图标加载失败，隐藏图标
+                               e.currentTarget.style.display = 'none';
+                             }}
+                           />
+                         )}
+                         <span className="truncate">{link.title}</span>
+                       </div>
                      </AdvancedMovingBorder>
                      
                      {/* 选中指示器 */}

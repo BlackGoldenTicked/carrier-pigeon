@@ -14,6 +14,7 @@ export interface QuickLink {
   id: number
   title: string
   url: string
+  icon?: string // 网站图标URL，可选字段
 }
 
 /**
