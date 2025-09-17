@@ -472,7 +472,7 @@ function NormalMode() {
     <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-6 py-12">
         {/* 使用说明 */}
-        <div className="mb-8 text-center">
+        {/* <div className="mb-8 text-center">
           <div className="inline-flex items-center px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg text-sm">
             <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
@@ -481,7 +481,7 @@ function NormalMode() {
               <strong>使用说明：</strong>点击发送后会自动复制文本到剪贴板并打开选中的AI模型页面。支持的模型（Gemini、ChatGPT、Claude等）会自动填充文本并发送，其他模型请手动粘贴。
             </span>
           </div>
-        </div>
+        </div> */}
         
         {/* 快捷链接区域 */}
         <div className="mb-16">
