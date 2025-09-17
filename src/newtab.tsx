@@ -127,7 +127,7 @@ const allAIModels = defaultAIModelCategories.flatMap(category => category.models
  */
 function NormalMode() {
   const [selectedLinks, setSelectedLinks] = useState(new Set())
-  const [selectedModels, setSelectedModels] = useState(new Set(['gpt-4']))
+  const [selectedModels, setSelectedModels] = useState(new Set()) // 不默认选择任何模型
   const [inputText, setInputText] = useState('')
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionStart, setSelectionStart] = useState(null)
@@ -285,14 +285,15 @@ function NormalMode() {
 
   /**
    * 处理模型选择
+   * 支持多选、单选或不选
    */
   const toggleModel = (modelId: string) => {
     const newSelected = new Set(selectedModels)
     if (newSelected.has(modelId)) {
-      if (newSelected.size > 1) {
-        newSelected.delete(modelId)
-      }
+      // 如果已选中，则取消选择（允许取消所有选择）
+      newSelected.delete(modelId)
     } else {
+      // 如果未选中，则添加选择
       newSelected.add(modelId)
     }
     setSelectedModels(newSelected)
@@ -313,19 +314,22 @@ function NormalMode() {
    * 处理发送 - 自动化流程
    */
   const handleSend = async () => {
+    // 验证输入文本
     if (!inputText.trim()) {
+      alert('请输入要发送的内容')
+      return
+    }
+
+    // 验证模型选择
+    const selectedModelIds = Array.from(selectedModels)
+    if (selectedModelIds.length === 0) {
+      alert('请至少选择一个AI模型')
       return
     }
 
     console.log('🔍 [DEBUG] handleSend - 输入的文本:', inputText)
     console.log('🔍 [DEBUG] handleSend - 文本长度:', inputText.length)
-
-    // 获取选中的模型
-    const selectedModelIds = Array.from(selectedModels)
-    if (selectedModelIds.length === 0) {
-      alert('请至少选择一个模型')
-      return
-    }
+    console.log('🔍 [DEBUG] handleSend - 选中的模型:', selectedModelIds)
 
     // 获取选中模型的详细信息
     const selectedModelDetails = config.basicModels.filter(model => 
@@ -375,8 +379,7 @@ function NormalMode() {
 
       // 清空输入框
       setInputText('')
-      // 清空选中的模型
-      setSelectedModels(new Set())
+      // 保留模型选择，方便用户重复使用
       
       console.log(`一般模式：已为 ${selectedModelDetails.length} 个AI模型打开页面并自动填充发送`)
     } catch (error) {
@@ -562,7 +565,7 @@ function NormalMode() {
               <div className="bg-white dark:bg-gray-800 rounded-3xl p-6">
                 {/* 模型选择区域 */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex flex-col space-y-3">
+                  <div className="flex flex-col space-y-3 flex-1">
                     {/* 语言模型 */}
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]">
@@ -621,9 +624,21 @@ function NormalMode() {
 
                   </div>
                   
-                  {/* 字数统计 */}
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {inputText.length}/6000
+                  {/* 模型选择状态和字数统计 */}
+                  <div className="flex flex-col items-end space-y-2">
+                    {/* 模型选择状态 */}
+                    <div className={`text-xs px-2 py-1 rounded-full ${
+                      selectedModels.size === 0 
+                        ? 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300' 
+                        : 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300'
+                    }`}>
+                      {selectedModels.size === 0 ? '未选择模型' : `已选择 ${selectedModels.size} 个模型`}
+                    </div>
+                    
+                    {/* 字数统计 */}
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {inputText.length}/6000
+                    </div>
                   </div>
                 </div>
 
@@ -648,8 +663,9 @@ function NormalMode() {
                     {/* 发送按钮 */}
                     <button 
                       onClick={handleSend}
-                      disabled={!inputText.trim()}
+                      disabled={!inputText.trim() || selectedModels.size === 0}
                       className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200"
+                      title={selectedModels.size === 0 ? "请先选择至少一个模型" : !inputText.trim() ? "请输入内容" : "发送消息"}
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
