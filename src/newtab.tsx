@@ -485,7 +485,7 @@ function NormalMode() {
         
         {/* 快捷链接区域 */}
         <div className="mb-16">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-8 text-center">快捷访问</h2>
+          {/* <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-8 text-center">快捷访问</h2> */}
           
           {/* 选择提示 */}
           {selectedLinks.size > 0 && (
