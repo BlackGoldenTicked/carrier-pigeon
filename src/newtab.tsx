@@ -933,46 +933,88 @@ function PopupMenu({ isOpen, onClose, currentMode, onModeChange }: {
 /**
  * 新标签页组件
  */
+/**
+ * 同步获取保存的模式，避免异步加载导致的闪烁
+ */
+function getSavedModeSync(): string {
+  try {
+    // 优先尝试从 localStorage 同步读取（Chrome扩展环境下localStorage是同步的）
+    const saved = localStorage.getItem('mytab-current-mode')
+    if (saved && Object.values(TabMode).includes(saved)) {
+      return saved
+    }
+  } catch (error) {
+    console.warn('同步读取模式失败:', error)
+  }
+  
+  // 返回默认模式
+  return TabMode.NORMAL
+}
+
 function NewTabPage() {
-  // 当前模式状态
-  const [currentMode, setCurrentMode] = useState(TabMode.NORMAL)
+  // 使用同步方式获取初始模式，避免闪烁
+  const [currentMode, setCurrentMode] = useState(() => getSavedModeSync())
   const [showPopupMenu, setShowPopupMenu] = useState(false)
   const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   /**
-   * 从存储加载上次保存的模式
+   * 管理body类，确保极简模式样式立即生效
    */
   useEffect(() => {
-    const loadSavedMode = async () => {
-      try {
-        let savedMode = TabMode.NORMAL
-        
-        // 尝试从 Chrome 存储读取模式设置
-        if (chrome?.storage?.sync) {
-          const result = await chrome.storage.sync.get(['mytab-current-mode'])
-          if (result['mytab-current-mode']) {
-            savedMode = result['mytab-current-mode']
-          }
-        } else {
-          // 降级到 localStorage
-          const saved = localStorage.getItem('mytab-current-mode')
-          if (saved) {
-            savedMode = saved
-          }
-        }
-        
-        // 验证模式是否有效
-        if (Object.values(TabMode).includes(savedMode)) {
-          setCurrentMode(savedMode)
-        }
-      } catch (error) {
-        console.error('模式加载失败:', error)
-        // 降级到默认模式
-        setCurrentMode(TabMode.NORMAL)
+    const updateBodyClass = () => {
+      // 移除所有模式相关的类
+      document.body.classList.remove('minimal-mode', 'normal-mode', 'pro-mode')
+      
+      // 添加当前模式的类
+      if (currentMode === TabMode.MINIMAL) {
+        document.body.classList.add('minimal-mode')
+      } else if (currentMode === TabMode.NORMAL) {
+        document.body.classList.add('normal-mode')
+      } else if (currentMode === TabMode.PRO) {
+        document.body.classList.add('pro-mode')
       }
     }
 
-    loadSavedMode()
+    // 立即更新body类
+    updateBodyClass()
+
+    // 清理函数
+    return () => {
+      document.body.classList.remove('minimal-mode', 'normal-mode', 'pro-mode')
+    }
+  }, [currentMode])
+
+  /**
+   * 从Chrome存储异步同步模式（作为备用）
+   */
+  useEffect(() => {
+    const syncModeFromChromeStorage = async () => {
+      try {
+        // 如果在Chrome扩展环境中，尝试从Chrome存储同步
+        if (chrome?.storage?.sync) {
+          const result = await chrome.storage.sync.get(['mytab-current-mode'])
+          if (result['mytab-current-mode'] && Object.values(TabMode).includes(result['mytab-current-mode'])) {
+            const chromeMode = result['mytab-current-mode']
+            // 只有当Chrome存储的模式与当前模式不同时才更新
+            if (chromeMode !== currentMode) {
+              setCurrentMode(chromeMode)
+              // 同时更新localStorage保持同步
+              localStorage.setItem('mytab-current-mode', chromeMode)
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Chrome存储同步失败:', error)
+      } finally {
+        // 标记加载完成
+        setIsLoading(false)
+      }
+    }
+
+    // 短暂延迟后执行同步，确保页面已经渲染
+    const timer = setTimeout(syncModeFromChromeStorage, 50)
+    return () => clearTimeout(timer)
   }, [])
 
   /**
@@ -983,11 +1025,14 @@ function NewTabPage() {
       // 立即更新UI
       setCurrentMode(mode)
       
-      // 保存到存储
+      // 同步保存到localStorage（立即生效）
+      localStorage.setItem('mytab-current-mode', mode)
+      
+      // 异步保存到Chrome存储（作为备用）
       if (chrome?.storage?.sync) {
-        await chrome.storage.sync.set({ 'mytab-current-mode': mode })
-      } else {
-        localStorage.setItem('mytab-current-mode', mode)
+        chrome.storage.sync.set({ 'mytab-current-mode': mode }).catch(error => {
+          console.warn('Chrome存储保存失败:', error)
+        })
       }
     } catch (error) {
       console.error('模式保存失败:', error)
@@ -1038,13 +1083,44 @@ function NewTabPage() {
    * 渲染当前模式的内容
    */
   const renderModeContent = () => {
+    // 如果是极简模式，立即返回空白内容，不等待加载完成
+    if (currentMode === TabMode.MINIMAL) {
+      return (
+        <div className="min-h-screen w-full bg-white dark:bg-gray-900">
+          {/* 极简模式 - 完全空白 */}
+        </div>
+      )
+    }
+
+    // 对于其他模式，如果还在加载中，显示与目标模式匹配的加载状态
+    if (isLoading) {
+      switch (currentMode) {
+        case TabMode.PRO:
+          return (
+            <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-purple-900 flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">加载中...</p>
+              </div>
+            </div>
+          )
+        default:
+          // NORMAL模式的加载状态 - 显示简化版本避免闪烁
+          return (
+            <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900">
+              <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600 dark:text-gray-400">加载中...</p>
+                </div>
+              </div>
+            </div>
+          )
+      }
+    }
+
+    // 加载完成后渲染完整内容
     switch (currentMode) {
-      case TabMode.MINIMAL:
-        return (
-          <div className="min-h-screen w-full bg-white dark:bg-gray-900">
-            {/* 极简模式 - 完全空白 */}
-          </div>
-        )
       case TabMode.NORMAL:
          return <NormalMode />
       case TabMode.PRO:

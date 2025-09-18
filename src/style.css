@@ -26,6 +26,16 @@
     --radius: 0.5rem;
   }
 
+  /* 极简模式预加载样式 - 确保立即显示正确背景 */
+  body.minimal-mode {
+    background-color: white;
+    transition: none !important;
+  }
+  
+  body.minimal-mode.dark {
+    background-color: rgb(17, 24, 39); /* gray-900 */
+  }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
