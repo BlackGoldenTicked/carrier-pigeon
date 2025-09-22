@@ -4,10 +4,11 @@ import './style.css'
 import { Button as MovingBorderButton, AdvancedMovingBorder } from './components/ui/moving-border'
 import { AnimatedBorder, AnimatedBorderContainer } from './components/ui/animated-border'
 import { ModeSelector } from './components/ui/mode-selector'
-import { getQuickLinks, getAIModels, getModeConfig, getTabMode } from './utils/configLoader'
-import { AIModelCategory } from './types'
+import { getQuickLinks, getAIModels, getModeConfig, getTabMode, getPerformanceConfig } from './utils/configLoader'
+import { AIModelCategory, PerformanceMode } from './types'
 import { useFontSettings } from './hooks/useFontSettings'
 import { fontInjector } from './utils/fontInjector'
+import { PerformanceOptimizer } from './utils/performanceOptimizer'
 
 
 /**
@@ -308,7 +309,7 @@ function NormalMode() {
   }
 
   /**
-   * 处理发送 - 自动化流程
+   * 处理发送 - 自动化流程（支持性能优化）
    */
   const handleSend = async () => {
     // 验证输入文本
@@ -343,6 +344,14 @@ function NormalMode() {
       await navigator.clipboard.writeText(inputText)
       console.log('🔍 [DEBUG] handleSend - 已复制到剪贴板的文本:', inputText)
       
+      // 获取性能优化器实例
+      const optimizer = PerformanceOptimizer.getInstance()
+      
+      // 获取当前性能配置
+      const performanceSettings = optimizer.getSettings()
+      const currentMode = performanceSettings.mode
+      const estimatedTime = optimizer.getEstimatedTime(selectedModelDetails.length)
+      
       // 显示操作提示
       const notification = document.createElement('div')
       notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300'
@@ -351,18 +360,13 @@ function NormalMode() {
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
           </svg>
-          <span>💬 正在打开 ${selectedModelDetails.length} 个AI页面并自动填充发送...</span>
+          <span>💬 ${currentMode === 'energy_saving' ? '节能模式' : '高效模式'}：正在打开 ${selectedModelDetails.length} 个AI页面，预计耗时 ${estimatedTime}s...</span>
         </div>
       `
       document.body.appendChild(notification)
       
-      // 为每个选中的模型打开新标签页，并传递文本
-      for (const model of selectedModelDetails) {
-        console.log('🔍 [DEBUG] handleSend - 准备为模型打开页面:', model.name, '传递文本:', inputText)
-        await openModelPage(model, inputText)
-        // 添加延迟避免浏览器阻止多个弹窗
-        await new Promise(resolve => setTimeout(resolve, 500))
-      }
+      // 使用性能优化器打开模型页面
+      await optimizer.openModelsWithOptimalMode(selectedModelDetails, openModelPage, inputText)
 
       // 3秒后移除通知
       setTimeout(() => {
@@ -378,7 +382,7 @@ function NormalMode() {
       setInputText('')
       // 保留模型选择，方便用户重复使用
       
-      console.log(`一般模式：已为 ${selectedModelDetails.length} 个AI模型打开页面并自动填充发送`)
+      console.log(`${currentMode === 'energy_saving' ? '节能模式' : '高效模式'}：已为 ${selectedModelDetails.length} 个AI模型打开页面并自动填充发送`)
     } catch (error) {
       console.error('自动化流程执行失败:', error)
       alert('操作失败，请检查浏览器权限设置')
@@ -783,6 +787,8 @@ function PopupMenu({ isOpen, onClose, currentMode, onModeChange }: {
       console.error('主题保存失败:', error)
     }
   }
+
+
 
   if (!isOpen) return null
 

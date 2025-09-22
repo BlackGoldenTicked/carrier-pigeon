@@ -1,6 +1,7 @@
 import quickLinksConfig from '../config/quickLinks.json'
 import aiModelsConfig from '../config/aiModels.json'
 import modeConfigData from '../config/modeConfig.json'
+import performanceConfigData from '../config/performanceConfig.json'
 
 /**
  * 快捷链接数据类型定义
@@ -51,6 +52,26 @@ export interface ModeConfig {
 }
 
 /**
+ * 性能配置数据类型定义
+ */
+export interface PerformanceConfig {
+  performanceSettings: {
+    mode: string
+    energySavingMode: {
+      enabled: boolean
+      delayBetweenModels: number
+      description: string
+    }
+    efficientMode: {
+      enabled: boolean
+      batchSize: number
+      delayBetweenBatches: number
+      description: string
+    }
+  }
+}
+
+/**
  * 配置加载器类
  * 统一管理所有JSON配置文件的加载和访问
  * 优化版：添加缓存机制、懒加载和性能监控
@@ -61,6 +82,7 @@ export class ConfigLoader {
   private aiModelsData: AIModelCategory[] | null = null
   private modeConfigData: Record<string, ModeConfig> | null = null
   private tabModeData: Record<string, string> | null = null
+  private performanceConfigData: PerformanceConfig | null = null
   
   // 缓存时间戳，用于缓存失效检查
   private cacheTimestamps = new Map<string, number>()
@@ -179,6 +201,23 @@ export class ConfigLoader {
   }
 
   /**
+   * 获取性能配置（优化版）
+   * @returns 性能配置对象
+   */
+  public getPerformanceConfig(): PerformanceConfig {
+    const cacheKey = 'performanceConfig'
+    
+    if (!this.performanceConfigData || !this.isCacheValid(cacheKey)) {
+      const startTime = Date.now()
+      this.performanceConfigData = performanceConfigData as PerformanceConfig
+      this.setCacheTimestamp(cacheKey)
+      this.recordLoadTime(cacheKey, startTime)
+    }
+    
+    return this.performanceConfigData
+  }
+
+  /**
    * 重新加载所有配置
    * 用于配置文件更新后的热重载
    */
@@ -187,6 +226,7 @@ export class ConfigLoader {
     this.aiModelsData = null
     this.modeConfigData = null
     this.tabModeData = null
+    this.performanceConfigData = null
   }
 
   /**
@@ -239,3 +279,4 @@ export const getQuickLinks = () => configLoader.getQuickLinks()
 export const getAIModels = () => configLoader.getAIModels()
 export const getModeConfig = () => configLoader.getModeConfig()
 export const getTabMode = () => configLoader.getTabMode()
+export const getPerformanceConfig = () => configLoader.getPerformanceConfig()

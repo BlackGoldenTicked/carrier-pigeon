@@ -170,3 +170,39 @@ export interface FontSettings {
   fontSize: number
   lineHeight: number
 }
+
+/**
+ * 性能模式枚举
+ */
+export enum PerformanceMode {
+  ENERGY_SAVING = 'energy_saving',
+  EFFICIENT = 'efficient'
+}
+
+/**
+ * 节能模式配置接口
+ */
+export interface EnergySavingModeConfig {
+  enabled: boolean
+  delayBetweenModels: number
+  description: string
+}
+
+/**
+ * 高效模式配置接口
+ */
+export interface EfficientModeConfig {
+  enabled: boolean
+  batchSize: number
+  delayBetweenBatches: number
+  description: string
+}
+
+/**
+ * 性能配置接口
+ */
+export interface PerformanceSettings {
+  mode: PerformanceMode
+  energySavingMode: EnergySavingModeConfig
+  efficientMode: EfficientModeConfig
+}
