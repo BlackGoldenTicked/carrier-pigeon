@@ -17,71 +17,35 @@ function initTheme() {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     const isDarkSystem = mediaQuery.matches
     
-    // 检测浏览器主题设置
-    const isDarkBrowser = document.documentElement.style.colorScheme === 'dark'
-    
     // 检测当前时间（作为备用方案）
     const hour = new Date().getHours()
     const isDarkTime = hour < 7 || hour > 19
-    
-    console.log('🔍 详细主题检测:')
-    console.log('  📱 系统偏好:', isDarkSystem ? '暗色' : '亮色')
-    console.log('  🌐 浏览器设置:', isDarkBrowser ? '暗色' : '亮色')
-    console.log('  ⏰ 当前时间:', hour + ':00', isDarkTime ? '(夜间)' : '(白天)')
-    console.log('  🔧 User Agent:', navigator.userAgent.includes('Chrome') ? 'Chrome' : '其他浏览器')
     
     // 决定最终主题（优先级：系统偏好 > 时间 > 默认亮色）
     let finalDark = isDarkSystem
     
     // 如果系统检测失败，使用时间作为备用
     if (!isDarkSystem && isDarkTime) {
-      console.log('⚠️ 系统主题检测可能失败，使用时间备用方案')
       finalDark = true
     }
-    
-    console.log('🎨 最终主题决定:', finalDark ? '暗色模式' : '亮色模式')
     
     if (finalDark) {
       document.documentElement.classList.add('dark')
       document.documentElement.style.colorScheme = 'dark'
-      console.log('✅ 已设置暗色模式')
     } else {
       document.documentElement.classList.remove('dark')
       document.documentElement.style.colorScheme = 'light'
-      console.log('☀️ 已设置亮色模式')
-    }
-    
-    console.log('📋 当前状态:')
-    console.log('  HTML 类名:', document.documentElement.className || '(无类名)')
-    console.log('  Color Scheme:', document.documentElement.style.colorScheme)
-    
-    // 更新调试信息显示
-    const debugEl = document.getElementById('theme-debug')
-    if (debugEl) {
-      debugEl.innerHTML = `
-        <div>系统偏好: ${isDarkSystem ? '暗色' : '亮色'}</div>
-        <div>浏览器: ${isDarkBrowser ? '暗色' : '亮色'}</div>
-        <div>时间: ${hour}:00 ${isDarkTime ? '(夜间)' : '(白天)'}</div>
-        <div>最终: ${finalDark ? '暗色' : '亮色'}</div>
-        <div>HTML: ${document.documentElement.classList.contains('dark') ? '有dark' : '无dark'}</div>
-      `
     }
   }
   
-  console.log('🚀 初始化增强主题检测...')
   updateTheme()
   
   // 监听系统主题变化
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-  mediaQuery.addEventListener('change', (e) => {
-    console.log('🔄 系统主题发生变化:', e.matches ? '暗色模式' : '亮色模式')
-    updateTheme()
-  })
+  mediaQuery.addEventListener('change', updateTheme)
   
   // 每分钟检查一次（用于时间备用方案）
   setInterval(updateTheme, 60000)
-  
-  console.log('✨ 增强主题检测初始化完成')
 }
 
 // 初始化主题

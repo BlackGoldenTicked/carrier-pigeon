@@ -25,7 +25,6 @@ export default function NewTabApp() {
         await new Promise(resolve => setTimeout(resolve, 500))
         setIsLoading(false)
       } catch (error) {
-        console.error('Failed to load settings:', error)
         setIsLoading(false)
       }
     }

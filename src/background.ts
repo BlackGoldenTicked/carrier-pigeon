@@ -7,14 +7,9 @@
  * 监听来自content script和popup的消息
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('🔍 [DEBUG] Background script收到消息:', request)
-  
   // 处理打开新标签页并发送消息的请求
   if (request.action === 'openTabAndSendMessage') {
     const { url, message } = request
-    console.log('🔍 [DEBUG] Background - 提取的URL:', url)
-    console.log('🔍 [DEBUG] Background - 提取的消息:', message)
-    console.log('🔍 [DEBUG] Background - 消息中的文本:', message.text)
     
     /**
      * 检查是否已存在相同域名的标签页
@@ -52,7 +47,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const checkTabLoaded = () => {
         chrome.tabs.get(tabId, (updatedTab) => {
           if (chrome.runtime.lastError) {
-            console.error('获取标签页信息失败:', chrome.runtime.lastError)
             sendResponse({ success: false, message: '标签页不存在或已关闭' })
             return
           }
@@ -60,13 +54,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           if (updatedTab.status === 'complete') {
             // 页面加载完成，发送消息
             setTimeout(() => {
-              console.log('🔍 [DEBUG] Background - 准备发送消息到标签页:', tabId, messageToSend)
               chrome.tabs.sendMessage(tabId, messageToSend, (response) => {
                 if (chrome.runtime.lastError) {
-                  console.error('发送消息失败:', chrome.runtime.lastError)
                   sendResponse({ success: false, message: '发送消息失败' })
                 } else {
-                  console.log('🔍 [DEBUG] Background - 发送消息到标签页的响应:', response)
                   sendResponse({
                     success: true,
                     tabId: tabId,
@@ -89,22 +80,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // 先检查是否已存在相同域名的标签页
     findExistingTab(url).then((existingTab) => {
       if (existingTab && existingTab.id) {
-        console.log('🔍 [DEBUG] Background - 找到已存在的标签页:', existingTab.id, existingTab.url)
-        
         // 切换到已存在的标签页
         chrome.tabs.update(existingTab.id, { active: true }, () => {
           if (chrome.runtime.lastError) {
-            console.error('切换标签页失败:', chrome.runtime.lastError)
             // 如果切换失败，创建新标签页
             createNewTab()
           } else {
-            console.log('🔍 [DEBUG] Background - 已切换到现有标签页')
             // 发送消息到现有标签页
             sendMessageToTab(existingTab.id!, message)
           }
         })
       } else {
-        console.log('🔍 [DEBUG] Background - 未找到现有标签页，创建新标签页')
         createNewTab()
       }
     })
@@ -115,7 +101,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const createNewTab = () => {
       chrome.tabs.create({ url }, (tab) => {
         if (tab.id) {
-          console.log('🔍 [DEBUG] Background - 创建新标签页:', tab.id)
           sendMessageToTab(tab.id, message)
         } else {
           sendResponse({ success: false, message: '创建标签页失败' })
@@ -147,8 +132,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   // 当标签页加载完成时，可以在这里做一些初始化工作
   if (changeInfo.status === 'complete' && tab.url) {
-    console.log('标签页加载完成:', tab.url)
+    // 标签页加载完成
   }
 })
-
-console.log('Background script已加载')

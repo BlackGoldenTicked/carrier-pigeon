@@ -53,6 +53,7 @@ export interface ModeConfig {
 /**
  * 配置加载器类
  * 统一管理所有JSON配置文件的加载和访问
+ * 优化版：添加缓存机制、懒加载和性能监控
  */
 export class ConfigLoader {
   private static instance: ConfigLoader
@@ -60,6 +61,13 @@ export class ConfigLoader {
   private aiModelsData: AIModelCategory[] | null = null
   private modeConfigData: Record<string, ModeConfig> | null = null
   private tabModeData: Record<string, string> | null = null
+  
+  // 缓存时间戳，用于缓存失效检查
+  private cacheTimestamps = new Map<string, number>()
+  private readonly CACHE_TTL = 300000 // 5分钟缓存时间
+  
+  // 性能监控
+  private loadTimes = new Map<string, number>()
 
   /**
    * 获取单例实例
@@ -72,46 +80,101 @@ export class ConfigLoader {
   }
 
   /**
-   * 获取快捷链接配置
+   * 检查缓存是否有效
+   * @param key 缓存键
+   * @returns 是否有效
+   */
+  private isCacheValid(key: string): boolean {
+    const timestamp = this.cacheTimestamps.get(key)
+    return timestamp ? (Date.now() - timestamp < this.CACHE_TTL) : false
+  }
+
+  /**
+   * 设置缓存时间戳
+   * @param key 缓存键
+   */
+  private setCacheTimestamp(key: string): void {
+    this.cacheTimestamps.set(key, Date.now())
+  }
+
+  /**
+   * 记录加载时间
+   * @param key 配置键
+   * @param startTime 开始时间
+   */
+  private recordLoadTime(key: string, startTime: number): void {
+    const loadTime = Date.now() - startTime
+    this.loadTimes.set(key, loadTime)
+    if (loadTime > 100) { // 超过100ms记录警告
+      console.warn(`配置加载较慢: ${key} 耗时 ${loadTime}ms`)
+    }
+  }
+
+  /**
+   * 获取快捷链接配置（优化版）
    * @returns 快捷链接数据数组
    */
   public getQuickLinks(): QuickLink[][] {
-    if (!this.quickLinksData) {
+    const cacheKey = 'quickLinks'
+    
+    if (!this.quickLinksData || !this.isCacheValid(cacheKey)) {
+      const startTime = Date.now()
       this.quickLinksData = quickLinksConfig.quickLinks
+      this.setCacheTimestamp(cacheKey)
+      this.recordLoadTime(cacheKey, startTime)
     }
+    
     return this.quickLinksData
   }
 
   /**
-   * 获取AI模型配置
+   * 获取AI模型配置（优化版）
    * @returns AI模型分类数据数组
    */
   public getAIModels(): AIModelCategory[] {
-    if (!this.aiModelsData) {
+    const cacheKey = 'aiModels'
+    
+    if (!this.aiModelsData || !this.isCacheValid(cacheKey)) {
+      const startTime = Date.now()
       this.aiModelsData = (aiModelsConfig as any).aiModelCategories || []
+      this.setCacheTimestamp(cacheKey)
+      this.recordLoadTime(cacheKey, startTime)
     }
+    
     return this.aiModelsData || []
   }
 
   /**
-   * 获取模式配置
+   * 获取模式配置（优化版）
    * @returns 模式配置对象
    */
   public getModeConfig(): Record<string, ModeConfig> {
-    if (!this.modeConfigData) {
+    const cacheKey = 'modeConfig'
+    
+    if (!this.modeConfigData || !this.isCacheValid(cacheKey)) {
+      const startTime = Date.now()
       this.modeConfigData = modeConfigData.modeConfig
+      this.setCacheTimestamp(cacheKey)
+      this.recordLoadTime(cacheKey, startTime)
     }
+    
     return this.modeConfigData
   }
 
   /**
-   * 获取Tab模式枚举
+   * 获取Tab模式枚举（优化版）
    * @returns Tab模式枚举对象
    */
   public getTabMode(): Record<string, string> {
-    if (!this.tabModeData) {
+    const cacheKey = 'tabMode'
+    
+    if (!this.tabModeData || !this.isCacheValid(cacheKey)) {
+      const startTime = Date.now()
       this.tabModeData = modeConfigData.TabMode
+      this.setCacheTimestamp(cacheKey)
+      this.recordLoadTime(cacheKey, startTime)
     }
+    
     return this.tabModeData
   }
 

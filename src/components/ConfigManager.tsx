@@ -83,7 +83,7 @@ export default function ConfigManager({
         const parsed = JSON.parse(savedConfig)
         mergedConfig = { ...defaultConfig, ...parsed }
       } catch (error) {
-        console.error('配置加载失败:', error)
+        // 配置加载失败，使用默认配置
       }
     }
     
@@ -379,7 +379,7 @@ export default function ConfigManager({
                           const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
                           setEditingLink({ ...editingLink, icon: iconUrl });
                         } catch (error) {
-                          console.error('Invalid URL:', editingLink.url);
+                          // URL格式无效，忽略错误
                         }
                       }
                     }}

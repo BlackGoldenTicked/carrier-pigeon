@@ -1,303 +1,199 @@
-/**
- * Claude专用内容脚本
- * 独立实现，无外部依赖
- */
+import type { PlasmoContentScript } from "plasmo"
+import { OptimizedContentScript } from './optimizedContentScript'
 
-import type { PlasmoCSConfig } from 'plasmo'
-
-export const config: PlasmoCSConfig = {
-  matches: ['https://claude.ai/*'],
-  run_at: 'document_end'
-}
-
-// Claude选择器配置
-const INPUT_SELECTORS = [
-  'div[contenteditable="true"][role="textbox"][aria-label="Write your prompt to Claude"]',
-  'div[contenteditable="true"][role="textbox"]',
-  'div[contenteditable="true"][data-testid="chat-input"]',
-  'div[contenteditable="true"] p',
-  'div[contenteditable="true"]',
-  'textarea[placeholder*="Talk to Claude"]',
-  'div[role="textbox"]'
-]
-
-const SUBMIT_SELECTORS = [
-  'button[aria-label="Send message"]',
-  'button[aria-label="Send Message"]',
-  'button[data-testid="send-button"]',
-  'button:has(svg[data-icon="arrow-up"])',
-  'button svg[data-icon="arrow-up"]',
-  'button[type="submit"]'
-]
-
-/**
- * 检查元素是否可见
- * @param element - 要检查的DOM元素
- * @returns 元素是否可见
- */
-function isElementVisible(element: Element): boolean {
-  const rect = element.getBoundingClientRect()
-  const style = window.getComputedStyle(element)
-  
-  return (
-    rect.width > 0 &&
-    rect.height > 0 &&
-    style.display !== 'none' &&
-    style.visibility !== 'hidden' &&
-    style.opacity !== '0'
-  )
+export const config: PlasmoContentScript = {
+  matches: ['https://claude.ai/*']
 }
 
 /**
- * 等待元素出现
- * @param selectors - CSS选择器数组
- * @param timeout - 超时时间（毫秒）
- * @returns Promise<Element | null>
+ * Claude优化的Content Script实现
  */
-function waitForElement(selectors: string[], timeout = 10000): Promise<Element | null> {
-  return new Promise((resolve) => {
+class ClaudeContentScript extends OptimizedContentScript {
+  private readonly INPUT_SELECTORS = [
+    'div[contenteditable="true"][role="textbox"][aria-label="Write your prompt to Claude"]',
+    'div[contenteditable="true"][role="textbox"]',
+    'div[contenteditable="true"] p',
+    'div[contenteditable="true"]',
+    'textarea[placeholder*="Talk to Claude"]',
+    'div[role="textbox"]'
+  ]
+
+  private readonly SUBMIT_SELECTORS = [
+    'button[aria-label="Send message"]',
+    'button[aria-label="Send Message"]',
+    'button:has(svg[data-icon="arrow-up"])',
+    'button svg[data-icon="arrow-up"]',
+    'button[type="submit"]'
+  ]
+
+  protected getInputSelectors(): string[] {
+    return this.INPUT_SELECTORS
+  }
+
+  protected getSubmitSelectors(): string[] {
+    return this.SUBMIT_SELECTORS
+  }
+
+  protected isValidSendButton(button: Element): boolean {
+    const ariaLabel = button.getAttribute('aria-label')?.toLowerCase() || ''
+    const textContent = button.textContent?.trim().toLowerCase() || ''
+    
+    // 检查Claude特定的发送按钮
+    if (ariaLabel.includes('send message') || ariaLabel.includes('send')) {
+      return true
+    }
+    
+    // 检查是否包含发送图标
+    const svgElement = button.querySelector('svg[data-icon="arrow-up"]')
+    if (svgElement) {
+      return true
+    }
+    
+    // 检查是否为提交按钮
+    if (button.getAttribute('type') === 'submit') {
+      return true
+    }
+    
+    return false
+  }
+
+  /**
+   * 初始化Claude Content Script
+   */
+  async init(): Promise<void> {
+    this.setupMessageListener()
+  }
+
+  /**
+   * 处理填充文本请求
+   */
+  private async handleFillText(text: string): Promise<boolean> {
+    try {
+      const inputElement = await this.waitForElement(this.getInputSelectors(), 5000)
+      if (!inputElement) {
+        console.log('[Claude] 未找到输入框')
+        return false
+      }
+
+      await this.injectText(inputElement, text)
+      console.log('[Claude] 文本填充成功')
+      return true
+    } catch (error) {
+      console.error('[Claude] 填充文本失败:', error)
+      return false
+    }
+  }
+
+  /**
+   * 处理自动发送请求
+   */
+  private async handleAutoSend(): Promise<boolean> {
+    try {
+      const sendButton = await this.waitForElementWithFilter(
+        this.getSubmitSelectors(),
+        this.isValidSendButton.bind(this),
+        5000
+      )
+
+      if (!sendButton) {
+        console.log('[Claude] 未找到有效的发送按钮')
+        return false
+      }
+
+      if (!this.isElementVisible(sendButton)) {
+        console.log('[Claude] 发送按钮不可见')
+        return false
+      }
+
+      await this.smartClick(sendButton)
+      console.log('[Claude] 自动发送成功')
+      return true
+    } catch (error) {
+      console.error('[Claude] 自动发送失败:', error)
+      return false
+    }
+  }
+
+  /**
+   * 等待符合条件的元素出现
+   */
+  private async waitForElementWithFilter(
+    selectors: string[],
+    filter: (element: Element) => boolean,
+    timeout: number = 5000
+  ): Promise<Element | null> {
     const startTime = Date.now()
     
-    function check() {
+    while (Date.now() - startTime < timeout) {
       for (const selector of selectors) {
         const elements = document.querySelectorAll(selector)
         for (const element of elements) {
-          if (isElementVisible(element)) {
-            console.log(`[Claude] 找到可见元素:`, selector, element)
-            resolve(element)
-            return
+          if (filter(element)) {
+            return element
           }
         }
       }
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
+    return null
+  }
+
+  /**
+   * 检查元素是否可见
+   */
+  private isElementVisible(element: Element): boolean {
+    const htmlElement = element as HTMLElement
+    const rect = htmlElement.getBoundingClientRect()
+    const style = window.getComputedStyle(htmlElement)
+    
+    return rect.width > 0 && 
+           rect.height > 0 && 
+           style.display !== 'none' && 
+           style.visibility !== 'hidden' && 
+           style.opacity !== '0'
+  }
+
+  /**
+   * 设置消息监听器
+   */
+  private setupMessageListener(): void {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+      console.log(`🔍 [DEBUG] Claude content script收到消息:`, request)
       
-      if (Date.now() - startTime > timeout) {
-        console.log(`[Claude] 等待元素超时:`, selectors)
-        resolve(null)
-        return
+      if (request.action === 'fillText') {
+        this.handleFillText(request.text).then(sendResponse)
+        return true
+      } else if (request.action === 'autoSend') {
+        this.handleAutoSend().then(sendResponse)
+        return true
+      } else if (request.action === 'fillAndSend' || request.action === 'autoFillAndSend') {
+        this.handleFillAndSend(request.text).then(sendResponse)
+        return true
       }
-      
-      setTimeout(check, 100)
-    }
-    
-    check()
-  })
-}
+    })
+  }
 
-/**
- * 设置消息监听器
- */
-function setupMessageListener() {
-  console.log('[Claude] 设置消息监听器')
-  
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log(`🔍 [DEBUG] Claude content script收到消息:`, message)
-    console.log(`🔍 [DEBUG] Claude 消息动作:`, message.action)
-    console.log(`🔍 [DEBUG] Claude 消息文本:`, message.text)
-    console.log(`🔍 [DEBUG] Claude 文本长度:`, message.text ? message.text.length : 0)
-    
-    // 支持标准的autoFillAndSend动作
-    if (message.action === 'autoFillAndSend' && message.text) {
-      console.log(`🔍 [DEBUG] Claude: 开始自动填充和发送流程`)
-      handleFillAndSend(message.text)
-        .then(result => {
-          console.log(`🔍 [DEBUG] Claude: 填充并发送结果:`, result)
-          sendResponse({ 
-            success: result.success, 
-            message: result.success ? '填充并发送成功' : '操作失败' 
-          })
-        })
-        .catch(error => {
-          console.error(`🔍 [DEBUG] Claude: 填充并发送错误:`, error)
-          sendResponse({ success: false, message: error.message })
-        })
-      return true
-    }
-    
-    if (message.action === 'fillText') {
-      handleFillText(message.text, message.autoSend || false)
-        .then(result => {
-          console.log('[Claude] 填充文本结果:', result)
-          sendResponse(result)
-        })
-        .catch(error => {
-          console.error('[Claude] 填充文本错误:', error)
-          sendResponse({ success: false, error: error.message })
-        })
-      return true // 保持消息通道开放
-    }
-    
-    if (message.action === 'autoSend') {
-      handleAutoSend()
-        .then(result => {
-          console.log('[Claude] 自动发送结果:', result)
-          sendResponse(result)
-        })
-        .catch(error => {
-          console.error('[Claude] 自动发送错误:', error)
-          sendResponse({ success: false, error: error.message })
-        })
-      return true
-    }
-    
-    if (message.action === 'fillAndSend') {
-      handleFillAndSend(message.text)
-        .then(result => {
-          console.log('[Claude] 填充并发送结果:', result)
-          sendResponse(result)
-        })
-        .catch(error => {
-          console.error('[Claude] 填充并发送错误:', error)
-          sendResponse({ success: false, error: error.message })
-        })
-      return true
-    }
-    
-    if (message.action === 'getDebugInfo') {
-      const debugInfo = getDebugInfo()
-      console.log('[Claude] 调试信息:', debugInfo)
-      sendResponse(debugInfo)
-      return true
-    }
-  })
-}
+  /**
+   * 处理填充文本并发送
+   */
+  private async handleFillAndSend(text: string): Promise<boolean> {
+    try {
+      const fillSuccess = await this.handleFillText(text)
+      if (!fillSuccess) {
+        return false
+      }
 
-/**
- * 处理文本填充
- * @param text - 要填充的文本
- * @param autoSend - 是否自动发送
- */
-async function handleFillText(text: string, autoSend: boolean = false) {
-  try {
-    console.log(`[Claude] 开始填充文本: "${text}", 自动发送: ${autoSend}`)
-    
-    const inputElement = await waitForElement(INPUT_SELECTORS, 5000)
-    if (!inputElement) {
-      throw new Error('未找到输入框')
-    }
-    
-    // 处理不同类型的输入元素
-    if (inputElement.tagName === 'TEXTAREA') {
-      const input = inputElement as HTMLTextAreaElement
-      input.focus()
-      input.value = text
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-      input.dispatchEvent(new Event('change', { bubbles: true }))
-    } else if (inputElement.hasAttribute('contenteditable')) {
-      const input = inputElement as HTMLElement
-      input.focus()
-      input.textContent = text
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-      input.dispatchEvent(new Event('change', { bubbles: true }))
-    } else {
-      const input = inputElement as HTMLInputElement | HTMLTextAreaElement
-      input.focus()
-      input.value = text
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-      input.dispatchEvent(new Event('change', { bubbles: true }))
-    }
-    
-    console.log('[Claude] 文本填充成功')
-    
-    if (autoSend) {
       await new Promise(resolve => setTimeout(resolve, 500))
-      return await handleAutoSend()
+      return await this.handleAutoSend()
+    } catch (error) {
+      console.error('[Claude] 填充并发送失败:', error)
+      return false
     }
-    
-    return { success: true, message: '文本填充成功' }
-  } catch (error) {
-    console.error('[Claude] 填充文本失败:', error)
-    throw error
   }
 }
 
-/**
- * 处理自动发送
- */
-async function handleAutoSend() {
-  try {
-    console.log('[Claude] 开始自动发送')
-    
-    const submitButton = await waitForElement(SUBMIT_SELECTORS, 3000)
-    if (!submitButton) {
-      throw new Error('未找到发送按钮')
-    }
-    
-    const button = submitButton as HTMLButtonElement
-    if (button.disabled) {
-      throw new Error('发送按钮被禁用')
-    }
-    
-    button.click()
-    console.log('[Claude] 自动发送成功')
-    
-    return { success: true, message: '自动发送成功' }
-  } catch (error) {
-    console.error('[Claude] 自动发送失败:', error)
-    throw error
-  }
-}
-
-/**
- * 处理填充并发送
- * @param text - 要填充的文本
- */
-async function handleFillAndSend(text: string) {
-  try {
-    console.log(`[Claude] 开始填充并发送: "${text}"`)
-    
-    await handleFillText(text, false)
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return await handleAutoSend()
-  } catch (error) {
-    console.error('[Claude] 填充并发送失败:', error)
-    throw error
-  }
-}
-
-/**
- * 获取调试信息
- */
-function getDebugInfo() {
-  const inputElements = INPUT_SELECTORS.map(selector => {
-    const elements = document.querySelectorAll(selector)
-    return {
-      selector,
-      count: elements.length,
-      visible: Array.from(elements).filter(el => isElementVisible(el)).length,
-      elements: Array.from(elements).map(el => ({
-        tagName: el.tagName,
-        className: el.className,
-        id: el.id,
-        visible: isElementVisible(el)
-      }))
-    }
-  })
-  
-  const submitElements = SUBMIT_SELECTORS.map(selector => {
-    const elements = document.querySelectorAll(selector)
-    return {
-      selector,
-      count: elements.length,
-      visible: Array.from(elements).filter(el => isElementVisible(el)).length,
-      elements: Array.from(elements).map(el => ({
-        tagName: el.tagName,
-        className: el.className,
-        id: el.id,
-        visible: isElementVisible(el),
-        disabled: (el as HTMLButtonElement).disabled
-      }))
-    }
-  })
-  
-  return {
-    platform: 'claude',
-    url: window.location.href,
-    inputElements,
-    submitElements,
-    timestamp: new Date().toISOString()
-  }
-}
-
-// 初始化
-setupMessageListener()
+// 初始化Claude Content Script
+const claudeScript = new ClaudeContentScript()
+claudeScript.init()
 console.log('[Claude] Content script已加载')
