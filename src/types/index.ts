@@ -90,6 +90,7 @@ export interface UserSettings {
   showClock: boolean
   showWeather: boolean
   showSearch: boolean
+  fontSettings: FontSettings
 }
 
 /**
@@ -123,11 +124,49 @@ export interface BaseComponentProps {
 }
 
 /**
- * API 响应基础接口
+ * API 响应接口
  */
 export interface ApiResponse<T = any> {
   success: boolean
   data?: T
   error?: string
   message?: string
+}
+
+/**
+ * 字体配置接口
+ */
+export interface FontConfig {
+  id: string
+  name: string
+  displayName: string
+  description: string
+  cssUrl: string
+  fontFamily: string
+  fontWeight?: string
+  previewText?: string
+  isEnabled: boolean
+  category: FontCategory
+}
+
+/**
+ * 字体分类枚举
+ */
+export enum FontCategory {
+  SERIF = 'serif',
+  SANS_SERIF = 'sans-serif',
+  MONOSPACE = 'monospace',
+  HANDWRITING = 'handwriting',
+  DISPLAY = 'display'
+}
+
+/**
+ * 字体设置接口
+ */
+export interface FontSettings {
+  enabledFontId?: string
+  customFonts: FontConfig[]
+  applyToAllPages: boolean
+  fontSize: number
+  lineHeight: number
 }

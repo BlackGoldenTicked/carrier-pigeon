@@ -6,6 +6,8 @@ import { AnimatedBorder, AnimatedBorderContainer } from './components/ui/animate
 import { ModeSelector } from './components/ui/mode-selector'
 import { getQuickLinks, getAIModels, getModeConfig, getTabMode } from './utils/configLoader'
 import { AIModelCategory } from './types'
+import { useFontSettings } from './hooks/useFontSettings'
+import { fontInjector } from './utils/fontInjector'
 
 
 /**
@@ -922,6 +924,9 @@ function NewTabPage() {
   const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
+  // 字体设置Hook
+  const { fontSettings, getEnabledFont } = useFontSettings()
+
   /**
    * 管理body类，确保极简模式样式立即生效
    */
@@ -980,6 +985,28 @@ function NewTabPage() {
     const timer = setTimeout(syncModeFromChromeStorage, 50)
     return () => clearTimeout(timer)
   }, [])
+
+  /**
+   * 应用字体设置
+   * 当字体配置变化时自动应用到页面
+   */
+  useEffect(() => {
+    const applyFontSettings = async () => {
+      try {
+        const enabledFont = getEnabledFont()
+        if (enabledFont && fontSettings.applyToAllPages) {
+          await fontInjector.applyFontSettings(enabledFont, fontSettings)
+          console.log(`字体已应用: ${enabledFont.displayName}`)
+        }
+      } catch (error) {
+        console.error('应用字体设置失败:', error)
+      }
+    }
+
+    // 延迟应用字体，确保页面已经渲染
+    const timer = setTimeout(applyFontSettings, 100)
+    return () => clearTimeout(timer)
+  }, [fontSettings, getEnabledFont])
 
   /**
    * 处理模式切换并保存到存储

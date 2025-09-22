@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import './style.css'
 import { getQuickLinks, getAIModels, type QuickLink, type AIModel, type AIModelCategory } from './utils/configLoader'
+import { FontManager } from './components/FontManager'
 
 /**2 * 图标获取工具函数
  */
@@ -151,7 +152,7 @@ const defaultConfig: ConfigData = {
  */
 function OptionsPage() {
   const [config, setConfig] = useState<ConfigData>(defaultConfig)
-  const [activeTab, setActiveTab] = useState<'general' | 'links' | 'models'>('general')
+  const [activeTab, setActiveTab] = useState<'general' | 'links' | 'models' | 'fonts'>('general')
   const [modelFilter, setModelFilter] = useState<'all' | 'llm' | 'voice' | 'image' | 'video' | 'language' | 'multimedia'>('all')
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -751,6 +752,20 @@ function OptionsPage() {
               </svg>
               模型管理
             </button>
+            
+            <button
+              onClick={() => setActiveTab('fonts')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'fonts'
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+              }`}
+            >
+              <svg className="mr-3 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM16 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z" />
+              </svg>
+              字体管理
+            </button>
           </nav>
 
           {/* 主内容区域 */}
@@ -1346,6 +1361,13 @@ function OptionsPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'fonts' && (
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-6">字体管理</h2>
+                <FontManager />
               </div>
             )}
           </main>
