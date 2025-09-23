@@ -934,6 +934,14 @@ function NewTabPage() {
   // 字体设置Hook
   const { fontSettings, getEnabledFont } = useFontSettings()
 
+  // 立即初始化字体设置，避免闪烁
+  useEffect(() => {
+    const enabledFont = getEnabledFont()
+    if (enabledFont && fontSettings.applyToAllPages) {
+      fontInjector.initialize(enabledFont, fontSettings)
+    }
+  }, []) // 只在组件挂载时执行一次
+
   /**
    * 管理body类，确保极简模式样式立即生效
    */
@@ -998,21 +1006,16 @@ function NewTabPage() {
    * 当字体配置变化时自动应用到页面
    */
   useEffect(() => {
-    const applyFontSettings = async () => {
-      try {
-        const enabledFont = getEnabledFont()
-        if (enabledFont && fontSettings.applyToAllPages) {
-          await fontInjector.applyFontSettings(enabledFont, fontSettings)
-          console.log(`字体已应用: ${enabledFont.displayName}`)
-        }
-      } catch (error) {
-        console.error('应用字体设置失败:', error)
+    try {
+      const enabledFont = getEnabledFont()
+      if (enabledFont && fontSettings.applyToAllPages) {
+        // 使用同步方法立即应用，避免闪烁
+        fontInjector.applySyncFontSettings(enabledFont, fontSettings)
+        console.log(`字体已同步应用: ${enabledFont.displayName}`)
       }
+    } catch (error) {
+      console.error('应用字体设置失败:', error)
     }
-
-    // 延迟应用字体，确保页面已经渲染
-    const timer = setTimeout(applyFontSettings, 100)
-    return () => clearTimeout(timer)
   }, [fontSettings, getEnabledFont])
 
   /**

@@ -9,6 +9,8 @@ export class FontInjector {
   private loadedFonts: Set<string> = new Set()
   private currentStyleElement: HTMLStyleElement | null = null
   private fontLinkElements: Map<string, HTMLLinkElement> = new Map()
+  private fontLoadPromises: Map<string, Promise<void>> = new Map()
+  private isInitialized: boolean = false
 
   private constructor() {}
 
@@ -88,7 +90,41 @@ export class FontInjector {
   }
 
   /**
-   * 应用字体设置到页面
+   * 同步应用字体设置到页面（立即生效，无闪烁）
+   * @param font 字体配置
+   * @param settings 字体设置
+   */
+  applySyncFontSettings(font: FontConfig, settings: FontSettings): void {
+    try {
+      // 移除之前的样式
+      this.removeCurrentStyles()
+
+      // 创建新的样式元素
+      const style = document.createElement('style')
+      style.id = 'custom-font-styles'
+      
+      const css = this.generateFontCSS(font, settings)
+      style.textContent = css
+      
+      // 立即插入到head的最前面，确保优先级
+      document.head.insertBefore(style, document.head.firstChild)
+      this.currentStyleElement = style
+      
+      // 如果字体需要外部CSS，异步加载但不等待
+      if (font.cssUrl && !this.loadedFonts.has(font.id)) {
+        this.loadFont(font).catch(error => {
+          console.warn(`Failed to load font ${font.displayName}:`, error)
+        })
+      }
+      
+      console.log(`Sync applied font: ${font.displayName}`)
+    } catch (error) {
+      console.error('Failed to sync apply font settings:', error)
+    }
+  }
+
+  /**
+   * 异步应用字体设置到页面（等待字体加载完成）
    */
   async applyFontSettings(font: FontConfig, settings: FontSettings): Promise<void> {
     try {
@@ -192,18 +228,26 @@ export class FontInjector {
     }
   }
 
-  /**
-   * 预加载字体
-   */
-  async preloadFont(font: FontConfig): Promise<void> {
-    if (!font.cssUrl || this.loadedFonts.has(font.id)) {
-      return
-    }
 
+
+  /**
+   * 初始化字体注入器
+   * @param enabledFont 当前启用的字体
+   * @param settings 字体设置
+   */
+  initialize(enabledFont?: FontConfig, settings?: FontSettings): void {
+    if (this.isInitialized) return
+    
     try {
-      await this.loadFont(font)
+      // 如果有启用的字体，立即同步应用
+      if (enabledFont && settings) {
+        this.applySyncFontSettings(enabledFont, settings)
+      }
+      
+      this.isInitialized = true
+      console.log('FontInjector initialized')
     } catch (error) {
-      console.warn(`Failed to preload font: ${font.displayName}`, error)
+      console.error('Failed to initialize FontInjector:', error)
     }
   }
 
@@ -216,6 +260,30 @@ export class FontInjector {
       .map(font => this.preloadFont(font))
     
     await Promise.allSettled(loadPromises)
+  }
+
+  /**
+   * 预加载单个字体（带缓存）
+   */
+  async preloadFont(font: FontConfig): Promise<void> {
+    if (!font.cssUrl) return
+    
+    // 如果已经有加载Promise，直接返回
+    if (this.fontLoadPromises.has(font.id)) {
+      return this.fontLoadPromises.get(font.id)!
+    }
+    
+    // 创建加载Promise并缓存
+    const loadPromise = this.loadFont(font)
+    this.fontLoadPromises.set(font.id, loadPromise)
+    
+    try {
+      await loadPromise
+    } catch (error) {
+      // 加载失败时移除缓存，允许重试
+      this.fontLoadPromises.delete(font.id)
+      throw error
+    }
   }
 
   /**
