@@ -27,6 +27,13 @@
           "selectedColor": "#4285f4"
         },
         {
+          "id": "deepseek",
+          "name": "DeepSeek",
+          "type": "language",
+          "url": "https://chat.deepseek.com",
+          "selectedColor": "#1a1a1a"
+        },
+        {
           "id": "kimi",
           "name": "Kimi",
           "type": "language",
@@ -41,13 +48,6 @@
           "selectedColor": "#ff6600"
         },
         {
-          "id": "wenxin",
-          "name": "文心一言",
-          "type": "language",
-          "url": "https://yiyan.baidu.com",
-          "selectedColor": "#2932e1"
-        },
-        {
           "id": "yuanbao",
           "name": "元宝",
           "type": "language",
@@ -55,11 +55,11 @@
           "selectedColor": "#07c160"
         },
         {
-          "id": "deepseek",
-          "name": "DeepSeek",
+          "id": "doubao",
+          "name": "豆包",
           "type": "language",
-          "url": "https://chat.deepseek.com",
-          "selectedColor": "#1a1a1a"
+          "url": "https://doubao.com",
+          "selectedColor": "#2932e1"
         }
       ]
     },

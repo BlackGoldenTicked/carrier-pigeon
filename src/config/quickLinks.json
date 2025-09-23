@@ -3,9 +3,9 @@
     [
       {
         "id": 1,
-        "title": "Google",
-        "url": "https://www.google.com",
-        "icon": "https://www.google.com/favicon.ico"
+        "title": "Today",
+        "url": "https://tophub.today",
+        "icon": "https://tophub.today/favicon.ico"
       },
       {
         "id": 2,
@@ -60,8 +60,8 @@
       {
         "id": 10,
         "title": "Index",
-        "url": "https://in.chaordex.com",
-        "icon": "https://in.chaordex.com/favicon.ico"
+        "url": "https://yinghezhinan.com/",
+        "icon": "https://yinghezhinan.com/favicon.ico"
       }
     ]
   ]
