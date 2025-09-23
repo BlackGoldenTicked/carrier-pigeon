@@ -309,6 +309,21 @@ function NormalMode() {
   }
 
   /**
+   * 处理键盘事件 - 支持 Cmd/Ctrl + Enter 快捷键发送
+   */
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // 检测 Cmd(Mac) 或 Ctrl(Windows/Linux) + Enter
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault() // 阻止默认的换行行为
+      
+      // 检查发送条件（与发送按钮相同的逻辑）
+      if (inputText.trim() && selectedModels.size > 0) {
+        handleSend()
+      }
+    }
+  }
+
+  /**
    * 处理发送 - 自动化流程（支持性能优化）
    */
   const handleSend = async () => {
@@ -662,25 +677,19 @@ function NormalMode() {
                   <textarea
                     value={inputText}
                     onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
                     placeholder="向 AI 提问任何问题..."
-                    className="w-full h-32 p-4 pr-20 border-0 resize-none rounded-2xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+                    className="w-full h-32 p-4 pr-16 border-0 resize-none rounded-2xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
                   />
                   
-                  {/* 右侧按钮组 */}
-                  <div className="absolute bottom-4 right-4 flex items-center space-x-2">
-                    {/* 语音按钮 */}
-                    <button className="p-2 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors duration-200">
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    
+                  {/* 发送按钮 */}
+                  <div className="absolute bottom-4 right-4">
                     {/* 发送按钮 */}
                     <button 
                       onClick={handleSend}
                       disabled={!inputText.trim() || selectedModels.size === 0}
                       className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200"
-                      title={selectedModels.size === 0 ? "请先选择至少一个模型" : !inputText.trim() ? "请输入内容" : "发送消息"}
+                      title={selectedModels.size === 0 ? "请先选择至少一个模型" : !inputText.trim() ? "请输入内容" : "发送消息 (⌘+Enter 或 Ctrl+Enter)"}
                     >
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
