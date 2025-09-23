@@ -608,10 +608,10 @@ function NormalMode() {
                       </div>
                     </div>
                     
-                    {/* 多媒体模型 */}
+                    {/* 多模态模型 */}
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]">
-                        音视频:
+                      多模态:
                       </span>
                       <div className="flex flex-wrap gap-2">
                         {config.basicModels.filter(model => model.type === 'multimedia' && model.enabled).map((model: BasicModelConfig) => (
