@@ -1,4 +1,9 @@
+import type { PlasmoContentScript } from "plasmo"
 import { OptimizedContentScript } from './optimizedContentScript'
+
+export const config: PlasmoContentScript = {
+  matches: ["https://never-match-this-url.invalid/*"]  // 不匹配任何真实URL，这是一个基类
+}
 
 /**
  * AI平台Content Script的通用基类
@@ -166,19 +171,32 @@ export abstract class AIPlatformContentScript extends OptimizedContentScript {
    */
   private setupMessageListener(): void {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (this.enableDetailedLogging()) {
-        console.log(`🔍 [DEBUG] ${this.getPlatformName()} content script收到消息:`, request)
-      }
+      console.log(`📨 接收消息: ${request.text || request.action}`)
       
       if (request.action === 'fillText') {
-        this.handleFillText(request.text).then(sendResponse)
+        this.handleFillText(request.text).then(result => {
+          sendResponse(result)
+        }).catch(error => {
+          sendResponse(false)
+        })
         return true
       } else if (request.action === 'autoSend') {
-        this.handleAutoSend().then(sendResponse)
+        this.handleAutoSend().then(result => {
+          sendResponse(result)
+        }).catch(error => {
+          sendResponse(false)
+        })
         return true
       } else if (request.action === 'fillAndSend' || request.action === 'autoFillAndSend') {
-        this.handleFillAndSend(request.text).then(sendResponse)
+        this.handleFillAndSend(request.text).then(result => {
+          sendResponse(result)
+        }).catch(error => {
+          sendResponse(false)
+        })
         return true
+      } else {
+        sendResponse(false)
+        return false
       }
     })
   }
