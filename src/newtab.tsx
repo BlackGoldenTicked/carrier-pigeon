@@ -413,6 +413,7 @@ function NormalMode() {
       url: ['tongyi.aliyun.com', 'qianwen.aliyun.com'],
       action: 'fillAndSend'
     },
+            'doubao': { url: ['doubao.com'], action: 'fillAndSend' },
             'wenxin': { url: ['yiyan.baidu.com', 'wenxin.baidu.com'], action: 'fillAndSend' },
             'deepseek': { url: ['chat.deepseek.com'], action: 'fillAndSend' }
           }
