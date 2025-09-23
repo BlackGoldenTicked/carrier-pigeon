@@ -1,190 +1,229 @@
 import type { PlasmoContentScript } from "plasmo"
-import { OptimizedContentScript } from './optimizedContentScript'
+import { AIPlatformContentScript } from './aiPlatformContentScript'
 
 export const config: PlasmoContentScript = {
-  matches: ['https://yuanbao.tencent.com/*', 'https://www.yuanbao.tencent.com/*']
+  matches: [
+    'https://yuanbao.tencent.com/*',
+    'https://*.yuanbao.tencent.com/*'
+  ]
 }
 
 /**
- * 元宝优化的Content Script实现
+ * 元宝AI平台的Content Script实现
  */
-class YuanbaoContentScript extends OptimizedContentScript {
+class YuanbaoContentScript extends AIPlatformContentScript {
   private readonly INPUT_SELECTORS = [
+    // 元宝的输入框选择器
+    'div[contenteditable="true"][data-testid="chat-input"]',
+    'div[contenteditable="true"][placeholder*="输入"]',
+    'div[contenteditable="true"][placeholder*="请输入"]',
+    'div[contenteditable="true"][role="textbox"]',
+    'textarea[placeholder*="输入"]',
     'textarea[placeholder*="请输入"]',
-    'textarea[placeholder*="输入消息"]',
+    'textarea[data-testid="chat-input"]',
+    // 特定的元宝选择器
+    '.yuanbao-input',
+    '.tencent-input',
+    '.chat-input-area',
+    // 通用选择器
     'div[contenteditable="true"]',
-    'div[role="textbox"]',
-    'input[type="text"]'
+    'textarea',
+    'input[type="text"]',
+    '.input-area textarea',
+    '.chat-input textarea',
+    '.message-input textarea',
+    '#chat-input',
+    '.input-box textarea',
+    '.chat-textarea',
+    '.input-textarea'
   ]
 
   private readonly SUBMIT_SELECTORS = [
-    'button[aria-label="发送"]',
+    // 元宝实际的发送按钮选择器（基于真实DOM结构）
+    '#yuanbao-send-btn',
+    'a#yuanbao-send-btn',
+    'a[id="yuanbao-send-btn"]',
+    
+    // 元宝的类名选择器
+    '.style__send-btn___P9SGw',
+    'a.style__send-btn___P9SGw',
+    'a[class*="style__send-btn"]',
+    'a[class*="send-btn"]',
+    
+    // 元宝图标选择器
+    'a:has(.hyc-common-icon.icon-send)',
+    'a:has(.icon-send)',
+    'a:has(span.icon-send)',
+    'a:has(.hyc-common-icon)',
+    'a:has(.iconfont.icon-send)',
+    
+    // 元宝的发送按钮选择器 - 更新的选择器
+    'button[data-testid="send-button"]',
+    'button[data-testid="chat-send-button"]',
+    'button[data-testid="submit-button"]',
+    'button[aria-label*="发送"]',
+    'button[aria-label*="send"]',
+    'button[title*="发送"]',
+    'button[title*="send"]',
+    // SVG图标选择器
     'button:has(svg[data-icon="send"])',
-    'button svg[data-icon="send"]',
+    'button:has(svg[name="send"])',
+    'button:has(svg[class*="send"])',
+    'button:has(.send-icon)',
+    'button:has(.icon-send)',
+    // 腾讯/元宝特定选择器
+    '.yuanbao-send-button',
+    '.tencent-send-button',
+    '.chat-send-btn',
+    '.send-message-btn',
+    '.submit-message-btn',
+    // 通用选择器
+    '.send-button',
+    '.chat-send-button',
+    '.send-btn',
+    '.submit-button',
+    '.submit-btn',
     'button[type="submit"]',
+    // 包含SVG的按钮
+    'button:has(svg)',
+    'button svg:parent',
+    // 文本内容选择器
     'button:contains("发送")',
-    'div[role="button"]:contains("发送")'
+    'button:contains("Send")',
+    'button:contains("提交")',
+    // 更宽泛的选择器
+    '[role="button"][aria-label*="发送"]',
+    '[role="button"]:has(svg)',
+    'div[role="button"]:has(svg)',
+    // 可能的容器内的按钮
+    '.chat-input-container button',
+    '.input-container button',
+    '.message-input-container button'
   ]
 
+  /**
+   * 获取输入框选择器
+   */
   protected getInputSelectors(): string[] {
     return this.INPUT_SELECTORS
   }
 
+  /**
+   * 获取发送按钮选择器
+   */
   protected getSubmitSelectors(): string[] {
     return this.SUBMIT_SELECTORS
   }
 
+  /**
+   * 获取平台名称
+   */
+  protected getPlatformName(): string {
+    return '元宝'
+  }
+
+  /**
+   * 启用详细日志记录用于调试
+   */
+  protected enableDetailedLogging(): boolean {
+    return true
+  }
+
+  /**
+   * 验证发送按钮是否有效且可点击
+   * @param button - 要验证的按钮元素
+   * @returns 是否为有效的发送按钮
+   */
   protected isValidSendButton(button: Element): boolean {
-    const ariaLabel = button.getAttribute('aria-label')?.toLowerCase() || ''
-    const textContent = button.textContent?.trim().toLowerCase() || ''
+    console.log('[元宝] 验证发送按钮:', button);
     
-    // 检查元宝特定的发送按钮
-    if (ariaLabel.includes('发送') || textContent.includes('发送')) {
-      return true
+    // 检查是否被禁用
+    if (button.hasAttribute('disabled') || button.getAttribute('aria-disabled') === 'true') {
+      console.log('[元宝] 按钮被禁用');
+      return false;
     }
-    
-    // 检查是否包含发送图标
-    const svgElement = button.querySelector('svg[data-icon="send"]')
-    if (svgElement) {
-      return true
+
+    // 特殊检查：元宝的实际发送按钮
+    const buttonId = button.getAttribute('id');
+    if (buttonId === 'yuanbao-send-btn') {
+      console.log('[元宝] 通过 ID 验证: yuanbao-send-btn');
+      return true;
     }
-    
-    // 检查是否为提交按钮
-    if (button.getAttribute('type') === 'submit') {
-      return true
+
+    // 检查元宝特定的类名
+    const className = button.className;
+    if (className.includes('style__send-btn') || className.includes('send-btn')) {
+      console.log('[元宝] 通过元宝特定类名验证:', className);
+      return true;
     }
-    
-    return false
-  }
 
-  /**
-   * 初始化元宝Content Script
-   */
-  async init(): Promise<void> {
-    this.setupMessageListener()
-  }
-
-  /**
-   * 处理填充文本请求
-   */
-  private async handleFillText(text: string): Promise<boolean> {
-     try {
-       const inputElement = await this.waitForElement(this.getInputSelectors(), 5000)
-       if (!inputElement) {
-         return false
-       }
- 
-       await this.injectText(inputElement as HTMLElement, text)
-       return true
-     } catch (error) {
-       return false
-     }
-   }
-
-  /**
-   * 处理自动发送请求
-   */
-  private async handleAutoSend(): Promise<boolean> {
-     try {
-       const sendButton = await this.waitForElementWithFilter(
-         this.getSubmitSelectors(),
-         this.isValidSendButton.bind(this),
-         5000
-       )
- 
-       if (!sendButton) {
-         return false
-       }
- 
-       if (!this.isElementVisible(sendButton)) {
-         return false
-       }
- 
-       await this.smartClick(sendButton)
-       return true
-     } catch (error) {
-       return false
-     }
-   }
-
-  /**
-   * 等待符合条件的元素出现
-   */
-  private async waitForElementWithFilter(
-    selectors: string[],
-    filter: (element: Element) => boolean,
-    timeout: number = 5000
-  ): Promise<Element | null> {
-    const startTime = Date.now()
-    
-    while (Date.now() - startTime < timeout) {
-      for (const selector of selectors) {
-        const elements = document.querySelectorAll(selector)
-        for (const element of elements) {
-          if (filter(element)) {
-            return element
-          }
-        }
-      }
-      await new Promise(resolve => setTimeout(resolve, 100))
+    // 检查元宝的图标
+    const iconElement = button.querySelector('.hyc-common-icon.icon-send, .icon-send, .iconfont.icon-send');
+    if (iconElement) {
+      console.log('[元宝] 通过元宝图标验证');
+      return true;
     }
-    
-    return null
-  }
 
-  /**
-   * 检查元素是否可见
-   */
-  private isElementVisible(element: Element): boolean {
-    const htmlElement = element as HTMLElement
-    const rect = htmlElement.getBoundingClientRect()
-    const style = window.getComputedStyle(htmlElement)
-    
-    return rect.width > 0 && 
-           rect.height > 0 && 
-           style.display !== 'none' && 
-           style.visibility !== 'hidden' && 
-           style.opacity !== '0'
-  }
-
-  /**
-   * 设置消息监听器
-   */
-  private setupMessageListener(): void {
-     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-       if (request.action === 'fillText') {
-         this.handleFillText(request.text).then(sendResponse)
-         return true
-       } else if (request.action === 'autoSend') {
-         this.handleAutoSend().then(sendResponse)
-         return true
-       } else if (request.action === 'fillAndSend' || request.action === 'autoFillAndSend') {
-         this.handleFillAndSend(request.text).then(sendResponse)
-         return true
-       }
-     })
-   }
-
-  /**
-   * 处理填充文本并发送
-   */
-  private async handleFillAndSend(text: string): Promise<boolean> {
-    try {
-      const fillSuccess = await this.handleFillText(text)
-      if (!fillSuccess) {
-        return false
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 500))
-      return await this.handleAutoSend()
-    } catch (error) {
-      console.error('[元宝] 填充并发送失败:', error)
-      return false
+    // 检查 data-testid
+    const testId = button.getAttribute('data-testid');
+    if (testId && (testId.includes('send') || testId.includes('submit'))) {
+      console.log('[元宝] 通过 data-testid 验证:', testId);
+      return true;
     }
+
+    // 检查是否包含发送图标（SVG）
+    const svgIcon = button.querySelector('svg[class*="send"], svg[class*="arrow"], svg[class*="submit"]');
+    if (svgIcon) {
+      console.log('[元宝] 通过 SVG 图标验证');
+      return true;
+    }
+
+    // 检查类名
+    const sendClassNames = ['send', 'submit', 'primary', 'action', 'btn-send', 'btn-submit'];
+    if (sendClassNames.some(cls => className.includes(cls))) {
+      console.log('[元宝] 通过类名验证:', className);
+      return true;
+    }
+
+    // 检查 aria-label
+    const ariaLabel = button.getAttribute('aria-label');
+    if (ariaLabel && (ariaLabel.includes('发送') || ariaLabel.includes('Send') || ariaLabel.includes('Submit') || ariaLabel.includes('提交'))) {
+      console.log('[元宝] 通过 aria-label 验证:', ariaLabel);
+      return true;
+    }
+
+    // 检查 title
+    const title = button.getAttribute('title');
+    if (title && (title.includes('发送') || title.includes('Send') || title.includes('Submit') || title.includes('提交'))) {
+      console.log('[元宝] 通过 title 验证:', title);
+      return true;
+    }
+
+    // 检查文本内容
+    const textContent = button.textContent?.trim().toLowerCase();
+    if (textContent && (textContent.includes('发送') || textContent.includes('send') || textContent.includes('submit') || textContent.includes('提交'))) {
+      console.log('[元宝] 通过文本内容验证:', textContent);
+      return true;
+    }
+
+    // 更宽松的 SVG 特征检查
+    const hasAnySvg = button.querySelector('svg');
+    if (hasAnySvg && (button.tagName.toLowerCase() === 'button' || button.tagName.toLowerCase() === 'a')) {
+      console.log('[元宝] 通过宽松 SVG 检查');
+      return true;
+    }
+
+    // 特殊处理：如果是 a 标签且包含图标类
+    if (button.tagName.toLowerCase() === 'a' && button.querySelector('.icon-send, .hyc-common-icon')) {
+      console.log('[元宝] 通过 a 标签图标检查');
+      return true;
+    }
+
+    console.log('[元宝] 按钮验证失败');
+    return false;
   }
 }
 
-// 初始化元宝Content Script
+// 初始化元宝 Content Script
 const yuanbaoScript = new YuanbaoContentScript()
 yuanbaoScript.init()
-console.log('[元宝] Content script已加载')

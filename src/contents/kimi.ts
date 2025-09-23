@@ -1,5 +1,5 @@
 import type { PlasmoContentScript } from "plasmo"
-import { OptimizedContentScript } from './optimizedContentScript'
+import { AIPlatformContentScript } from './aiPlatformContentScript'
 
 export const config: PlasmoContentScript = {
   matches: [
@@ -13,9 +13,9 @@ export const config: PlasmoContentScript = {
 }
 
 /**
- * Kimi优化的Content Script实现
+ * Kimi AI平台的Content Script实现
  */
-class KimiContentScript extends OptimizedContentScript {
+class KimiContentScript extends AIPlatformContentScript {
   private readonly INPUT_SELECTORS = [
     // 新的Lexical编辑器选择器
     '.chat-input-editor[data-lexical-editor="true"]',
@@ -42,7 +42,7 @@ class KimiContentScript extends OptimizedContentScript {
   ]
 
   private readonly SUBMIT_SELECTORS = [
-    // 基于实际DOM结构的精确选择器
+    // 新版发送按钮选择器
     'div.send-button-container div.send-button',
     'div.send-button-container:not(.disabled) div.send-button',
     'div[data-v-33aac482].send-button-container div[data-v-33aac482].send-button',
@@ -53,7 +53,7 @@ class KimiContentScript extends OptimizedContentScript {
     // 容器选择器
     'div.send-button-container',
     'div.send-button',
-    // 通用发送按钮选择器
+    // 通用选择器
     'button:has(svg)',
     'button[aria-label*="发送"]',
     'button[title*="发送"]',
@@ -64,31 +64,47 @@ class KimiContentScript extends OptimizedContentScript {
     'button[type="submit"]'
   ]
 
+  /**
+   * 获取输入框选择器
+   */
   protected getInputSelectors(): string[] {
     return this.INPUT_SELECTORS
   }
 
+  /**
+   * 获取发送按钮选择器
+   */
   protected getSubmitSelectors(): string[] {
     return this.SUBMIT_SELECTORS
   }
 
+  /**
+   * 获取平台名称
+   */
+  protected getPlatformName(): string {
+    return 'Kimi'
+  }
+
+  /**
+   * 验证发送按钮是否有效
+   */
   protected isValidSendButton(button: Element): boolean {
     // 检查是否被禁用
-    const container = button.closest('.send-button-container')
-    if (container && container.classList.contains('disabled')) {
+    if (button.classList.contains('disabled')) {
       return false
     }
     
     // 检查是否包含发送图标
-    const sendIcon = button.querySelector('svg[name="Send"]')
+    const sendIcon = button.querySelector('svg[name="Send"]') || 
+                     button.querySelector('svg.send-icon')
     if (sendIcon) {
       return true
     }
     
     // 检查特定的类名
     const classList = button.classList
-    if (classList.contains('send-button') || classList.contains('chat-send-button') ||
-        classList.contains('send-btn')) {
+    if (classList.contains('send-button') || classList.contains('send-btn') ||
+        classList.contains('chat-send-button')) {
       return true
     }
     
@@ -103,73 +119,40 @@ class KimiContentScript extends OptimizedContentScript {
   }
 
   /**
-   * 初始化Kimi Content Script
+   * 重写文本注入方法以支持Kimi的特殊编辑器
    */
-  async init(): Promise<void> {
-    this.setupMessageListener()
-  }
-
-  /**
-   * 处理填充文本请求
-   */
-  private async handleFillText(text: string): Promise<boolean> {
-    try {
-      const inputElement = await this.findKimiEditor()
-      if (!inputElement) {
-        return false
-      }
-
-      const success = await this.injectTextToKimi(inputElement, text)
-      return success
-    } catch (error) {
-      return false
+  protected async injectText(element: Element, text: string, triggerEvents: boolean = true): Promise<void> {
+    // 首先尝试找到Kimi的特殊编辑器
+    const kimiEditor = await this.findKimiEditor()
+    if (kimiEditor) {
+      await this.injectTextToKimi(kimiEditor, text)
+      return
     }
-  }
-
-  /**
-   * 处理自动发送请求
-   */
-  private async handleAutoSend(): Promise<boolean> {
-    try {
-      const sendButton = await this.waitForElementWithFilter(
-        this.getSubmitSelectors(),
-        this.isValidSendButton.bind(this),
-        5000
-      )
-
-      if (!sendButton) {
-        return false
-      }
-
-      if (!this.isElementVisible(sendButton)) {
-        return false
-      }
-
-      await this.smartClick(sendButton)
-      return true
-    } catch (error) {
-      return false
-    }
+    
+    // 如果没有找到特殊编辑器，使用基类的默认方法
+    await super.injectText(element, text, triggerEvents)
   }
 
   /**
    * 查找Kimi编辑器
    */
   private async findKimiEditor(): Promise<HTMLElement | null> {
-    // 首先尝试标准选择器
-    const element = await this.waitForElement(this.getInputSelectors(), 5000)
-    if (element) {
-      return element as HTMLElement
+    // 尝试在主文档中查找
+    for (const selector of this.INPUT_SELECTORS) {
+      const element = document.querySelector(selector) as HTMLElement
+      if (element) {
+        return element
+      }
     }
 
     // 尝试在Shadow DOM中查找
-    const shadowElement = this.findInShadowDOM(this.getInputSelectors())
+    const shadowElement = this.findInShadowDOM(this.INPUT_SELECTORS)
     if (shadowElement) {
       return shadowElement
     }
 
     // 尝试在iframe中查找
-    const iframeElement = this.findInIframes(this.getInputSelectors())
+    const iframeElement = this.findInIframes(this.INPUT_SELECTORS)
     if (iframeElement) {
       return iframeElement
     }
@@ -181,12 +164,12 @@ class KimiContentScript extends OptimizedContentScript {
    * 在Shadow DOM中查找元素
    */
   private findInShadowDOM(selectors: string[]): HTMLElement | null {
-    const elementsWithShadow = document.querySelectorAll('*')
-    for (const element of elementsWithShadow) {
+    const allElements = document.querySelectorAll('*')
+    for (const element of allElements) {
       if (element.shadowRoot) {
         for (const selector of selectors) {
           const found = element.shadowRoot.querySelector(selector) as HTMLElement
-          if (found && this.isElementVisible(found)) {
+          if (found) {
             return found
           }
         }
@@ -205,14 +188,14 @@ class KimiContentScript extends OptimizedContentScript {
         const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
         if (iframeDoc) {
           for (const selector of selectors) {
-            const found = iframeDoc.querySelector(selector) as HTMLElement
-            if (found && this.isElementVisible(found)) {
-              return found
+            const element = iframeDoc.querySelector(selector) as HTMLElement
+            if (element) {
+              return element
             }
           }
         }
-      } catch (e) {
-        // 跨域iframe无法访问
+      } catch (error) {
+        // 跨域iframe无法访问，忽略错误
       }
     }
     return null
@@ -222,7 +205,6 @@ class KimiContentScript extends OptimizedContentScript {
    * 向Kimi编辑器注入文本
    */
   private async injectTextToKimi(editor: HTMLElement, text: string): Promise<boolean> {
-    // 尝试多种注入方法
     const methods = [
       () => this.tryLexicalDOMInjection(editor, text),
       () => this.tryInputEventInjection(editor, text),
@@ -234,11 +216,11 @@ class KimiContentScript extends OptimizedContentScript {
     for (const method of methods) {
       try {
         const success = await method()
-        if (success) {
+        if (success && this.editorContainsText(editor, text)) {
           return true
         }
       } catch (error) {
-        // 注入方法失败，尝试下一个方法
+        console.warn(`[Kimi] 注入方法失败:`, error)
       }
     }
 
@@ -246,66 +228,60 @@ class KimiContentScript extends OptimizedContentScript {
   }
 
   /**
-   * Lexical DOM注入方法
+   * 尝试Lexical DOM注入
    */
   private async tryLexicalDOMInjection(editor: HTMLElement, text: string): Promise<boolean> {
     try {
-      editor.focus()
-      
       // 清空现有内容
       editor.innerHTML = ''
       
-      // 创建Lexical段落结构
+      // 创建段落元素
       const paragraph = document.createElement('p')
       paragraph.setAttribute('data-lexical-text', 'true')
       paragraph.textContent = text
+      
       editor.appendChild(paragraph)
       
-      // 触发Lexical事件
-      const events = ['input', 'change', 'keydown', 'keyup']
-      for (const eventType of events) {
-        editor.dispatchEvent(new Event(eventType, { bubbles: true }))
-      }
+      // 触发输入事件
+      const inputEvent = new Event('input', { bubbles: true })
+      editor.dispatchEvent(inputEvent)
       
       await new Promise(resolve => setTimeout(resolve, 100))
-      return this.editorContainsText(editor, text)
+      return true
     } catch (error) {
       return false
     }
   }
 
   /**
-   * 输入事件注入方法
+   * 尝试输入事件注入
    */
   private async tryInputEventInjection(editor: HTMLElement, text: string): Promise<boolean> {
     try {
       editor.focus()
       
-      if (editor.tagName === 'TEXTAREA') {
-        const textarea = editor as HTMLTextAreaElement
-        textarea.value = text
-      } else {
-        editor.textContent = text
+      // 清空内容
+      editor.innerHTML = ''
+      
+      // 设置文本内容
+      editor.textContent = text
+      
+      // 触发一系列事件
+      const events = ['focus', 'input', 'change', 'blur']
+      for (const eventType of events) {
+        const event = new Event(eventType, { bubbles: true })
+        editor.dispatchEvent(event)
+        await new Promise(resolve => setTimeout(resolve, 50))
       }
       
-      // 触发输入事件
-      const inputEvent = new InputEvent('input', {
-        bubbles: true,
-        cancelable: true,
-        inputType: 'insertText',
-        data: text
-      })
-      editor.dispatchEvent(inputEvent)
-      
-      await new Promise(resolve => setTimeout(resolve, 100))
-      return this.editorContainsText(editor, text)
+      return true
     } catch (error) {
       return false
     }
   }
 
   /**
-   * execCommand注入方法
+   * 尝试execCommand注入
    */
   private async tryExecCommandInjection(editor: HTMLElement, text: string): Promise<boolean> {
     try {
@@ -319,62 +295,92 @@ class KimiContentScript extends OptimizedContentScript {
       document.execCommand('insertText', false, text)
       
       await new Promise(resolve => setTimeout(resolve, 100))
-      return this.editorContainsText(editor, text)
+      return true
     } catch (error) {
       return false
     }
   }
 
   /**
-   * 键盘模拟方法
+   * 尝试键盘模拟
    */
   private async tryKeyboardSimulation(editor: HTMLElement, text: string): Promise<boolean> {
     try {
       editor.focus()
       
       // 清空内容
-      editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }))
-      editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+      const selectAllEvent = new KeyboardEvent('keydown', {
+        key: 'a',
+        ctrlKey: true,
+        bubbles: true
+      })
+      editor.dispatchEvent(selectAllEvent)
+      
+      const deleteEvent = new KeyboardEvent('keydown', {
+        key: 'Delete',
+        bubbles: true
+      })
+      editor.dispatchEvent(deleteEvent)
       
       // 逐字符输入
       for (const char of text) {
-        editor.dispatchEvent(new KeyboardEvent('keydown', { key: char, bubbles: true }))
-        editor.dispatchEvent(new KeyboardEvent('keypress', { key: char, bubbles: true }))
-        editor.dispatchEvent(new KeyboardEvent('keyup', { key: char, bubbles: true }))
-        
-        const inputEvent = new InputEvent('input', {
-          bubbles: true,
-          inputType: 'insertText',
-          data: char
+        const keydownEvent = new KeyboardEvent('keydown', {
+          key: char,
+          bubbles: true
         })
+        const keypressEvent = new KeyboardEvent('keypress', {
+          key: char,
+          bubbles: true
+        })
+        const inputEvent = new InputEvent('input', {
+          data: char,
+          bubbles: true
+        })
+        
+        editor.dispatchEvent(keydownEvent)
+        editor.dispatchEvent(keypressEvent)
         editor.dispatchEvent(inputEvent)
+        
+        await new Promise(resolve => setTimeout(resolve, 10))
       }
       
-      await new Promise(resolve => setTimeout(resolve, 100))
-      return this.editorContainsText(editor, text)
+      return true
     } catch (error) {
       return false
     }
   }
 
   /**
-   * 直接内容设置方法
+   * 尝试直接设置内容
    */
   private async tryDirectContentSet(editor: HTMLElement, text: string): Promise<boolean> {
     try {
-      editor.focus()
+      // 尝试多种属性设置
+      const properties = ['value', 'textContent', 'innerText', 'innerHTML']
       
-      if (editor.tagName === 'TEXTAREA') {
-        (editor as HTMLTextAreaElement).value = text
-      } else {
-        editor.textContent = text
+      for (const prop of properties) {
+        try {
+          if (prop === 'innerHTML') {
+            (editor as any)[prop] = `<p>${text}</p>`
+          } else {
+            (editor as any)[prop] = text
+          }
+          
+          // 触发事件
+          const event = new Event('input', { bubbles: true })
+          editor.dispatchEvent(event)
+          
+          await new Promise(resolve => setTimeout(resolve, 50))
+          
+          if (this.editorContainsText(editor, text)) {
+            return true
+          }
+        } catch (error) {
+          continue
+        }
       }
       
-      editor.dispatchEvent(new Event('input', { bubbles: true }))
-      editor.dispatchEvent(new Event('change', { bubbles: true }))
-      
-      await new Promise(resolve => setTimeout(resolve, 100))
-      return this.editorContainsText(editor, text)
+      return false
     } catch (error) {
       return false
     }
@@ -384,83 +390,8 @@ class KimiContentScript extends OptimizedContentScript {
    * 检查编辑器是否包含指定文本
    */
   private editorContainsText(editor: HTMLElement, text: string): boolean {
-    const content = editor.textContent || editor.innerText || (editor as HTMLInputElement).value || ''
+    const content = editor.textContent || editor.innerText || (editor as any).value || ''
     return content.includes(text)
-  }
-
-  /**
-   * 等待符合条件的元素出现
-   */
-  private async waitForElementWithFilter(
-    selectors: string[],
-    filter: (element: Element) => boolean,
-    timeout: number = 5000
-  ): Promise<Element | null> {
-    const startTime = Date.now()
-    
-    while (Date.now() - startTime < timeout) {
-      for (const selector of selectors) {
-        const elements = document.querySelectorAll(selector)
-        for (const element of elements) {
-          if (filter(element)) {
-            return element
-          }
-        }
-      }
-      await new Promise(resolve => setTimeout(resolve, 100))
-    }
-    
-    return null
-  }
-
-  /**
-   * 检查元素是否可见
-   */
-  private isElementVisible(element: Element): boolean {
-    const htmlElement = element as HTMLElement
-    const rect = htmlElement.getBoundingClientRect()
-    const style = window.getComputedStyle(htmlElement)
-    
-    return rect.width > 0 && 
-           rect.height > 0 && 
-           style.display !== 'none' && 
-           style.visibility !== 'hidden' && 
-           style.opacity !== '0'
-  }
-
-  /**
-   * 设置消息监听器
-   */
-  private setupMessageListener(): void {
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (request.action === 'fillText') {
-        this.handleFillText(request.text).then(sendResponse)
-        return true
-      } else if (request.action === 'autoSend') {
-        this.handleAutoSend().then(sendResponse)
-        return true
-      } else if (request.action === 'fillAndSend' || request.action === 'autoFillAndSend') {
-        this.handleFillAndSend(request.text).then(sendResponse)
-        return true
-      }
-    })
-  }
-
-  /**
-   * 处理填充文本并发送
-   */
-  private async handleFillAndSend(text: string): Promise<boolean> {
-    try {
-      const fillSuccess = await this.handleFillText(text)
-      if (!fillSuccess) {
-        return false
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 500))
-      return await this.handleAutoSend()
-    } catch (error) {
-      return false
-    }
   }
 }
 
