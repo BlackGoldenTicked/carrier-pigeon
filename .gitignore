@@ -100,3 +100,4 @@ key.pem
 
 # TypeScript cache
 *.tsbuildinfo
+/docs

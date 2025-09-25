@@ -9,6 +9,7 @@ import { AIModelCategory, PerformanceMode } from './types'
 import { useFontSettings } from './hooks/useFontSettings'
 import { fontInjector } from './utils/fontInjector'
 import { PerformanceOptimizer } from './utils/performanceOptimizer'
+import ProMode from './components/modes/ProMode'
 
 
 /**
@@ -1137,14 +1138,7 @@ function NewTabPage() {
       case TabMode.NORMAL:
          return <NormalMode />
       case TabMode.PRO:
-        return (
-          <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-purple-900 flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">Pro 模式</h1>
-              <p className="text-gray-600 dark:text-gray-400">完整的AI对话界面开发中...</p>
-            </div>
-          </div>
-        )
+        return <ProMode />
 
       default:
         return <NormalMode />

@@ -21,10 +21,17 @@ export default function NewTabApp() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
+        // 从本地存储加载用户选择的模式
+        const savedMode = localStorage.getItem('newtab-mode')
+        if (savedMode && Object.values(TabMode).includes(savedMode as TabMode)) {
+          setCurrentMode(savedMode as TabMode)
+        }
+        
         // 模拟加载过程
-        await new Promise(resolve => setTimeout(resolve, 500))
+        await new Promise(resolve => setTimeout(resolve, 300))
         setIsLoading(false)
       } catch (error) {
+        console.error('Failed to load settings:', error)
         setIsLoading(false)
       }
     }
@@ -39,6 +46,13 @@ export default function NewTabApp() {
   const handleModeChange = (mode: TabMode) => {
     setCurrentMode(mode)
     setShowModeSelector(false)
+    
+    // 保存用户选择的模式到本地存储
+    try {
+      localStorage.setItem('newtab-mode', mode)
+    } catch (error) {
+      console.error('Failed to save mode setting:', error)
+    }
   }
 
   /**
