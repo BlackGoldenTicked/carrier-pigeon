@@ -2,21 +2,14 @@ import {
   AppstoreAddOutlined,
   CloudUploadOutlined,
   CommentOutlined,
-  CopyOutlined,
   DeleteOutlined,
-  DislikeOutlined,
-  EditOutlined,
-  EllipsisOutlined,
   FileSearchOutlined,
   HeartOutlined,
-  LikeOutlined,
   PaperClipOutlined,
   PlusOutlined,
   ProductOutlined,
-  ReloadOutlined,
   ScheduleOutlined,
   SendOutlined,
-  ShareAltOutlined,
   SmileOutlined,
 } from '@ant-design/icons';
 import {
@@ -505,14 +498,6 @@ const ProMode: React.FC = () => {
           roles={{
             assistant: {
               placement: 'start',
-              footer: (
-                <div style={{ display: 'flex' }}>
-                  <Button type="text" size="small" icon={<ReloadOutlined />} />
-                  <Button type="text" size="small" icon={<CopyOutlined />} />
-                  <Button type="text" size="small" icon={<LikeOutlined />} />
-                  <Button type="text" size="small" icon={<DislikeOutlined />} />
-                </div>
-              ),
               loadingRender: () => <Spin size="small" />,
             },
             user: { placement: 'end' },
@@ -529,7 +514,7 @@ const ProMode: React.FC = () => {
             variant="borderless"
             icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
             title="你好，我是 myTab Chat"
-            description="基于 Open router 提供的模型能力和 Ant Design X 界面解决方案，提供简单便捷的对话服务~"
+            description="Open router 提供模型推理能力 | Ant Design X 提供界面解决方案"
           />
           <Flex gap={16}>
             <Prompts
