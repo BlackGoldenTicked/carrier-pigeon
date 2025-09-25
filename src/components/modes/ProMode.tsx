@@ -410,7 +410,7 @@ const ProMode: React.FC = () => {
           width={24}
           height={24}
         />
-        <span> The Chat </span>
+        <span> myTab Chat </span>
       </div>
 
       {/* 🌟 添加会话 */}
