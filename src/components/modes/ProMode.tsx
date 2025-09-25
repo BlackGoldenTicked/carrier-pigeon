@@ -28,10 +28,7 @@ import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { OpenRouterService } from '../../services/openrouter';
 import { OpenRouterConfig } from '../../types/chat';
-// 导入测试函数（仅在开发环境）
-if (process.env.NODE_ENV === 'development') {
-  import('../../test/openrouter-test');
-}
+
 
 type BubbleDataType = {
   role: string;
@@ -47,68 +44,7 @@ const createDefaultConversation = () => ({
   group: '今天',
 });
 
-const HOT_TOPICS = {
-  key: '1',
-  label: '热门话题',
-  children: [
-    {
-      key: '1-1',
-      description: 'Ant Design X 升级了什么？',
-      icon: <span style={{ color: '#f93a4a', fontWeight: 700 }}>1</span>,
-    },
-    {
-      key: '1-2',
-      description: '新的 AGI 混合界面',
-      icon: <span style={{ color: '#ff6565', fontWeight: 700 }}>2</span>,
-    },
-    {
-      key: '1-3',
-      description: 'Ant Design X 有哪些组件？',
-      icon: <span style={{ color: '#ff8f1f', fontWeight: 700 }}>3</span>,
-    },
-    {
-      key: '1-4',
-      description: '来发现 AI 时代的新设计范式。',
-      icon: <span style={{ color: '#00000040', fontWeight: 700 }}>4</span>,
-    },
-    {
-      key: '1-5',
-      description: '如何快速安装和导入组件？',
-      icon: <span style={{ color: '#00000040', fontWeight: 700 }}>5</span>,
-    },
-  ],
-};
 
-const DESIGN_GUIDE = {
-  key: '2',
-  label: '设计指南',
-  children: [
-    {
-      key: '2-1',
-      icon: <HeartOutlined />,
-      label: '意图',
-      description: 'AI 理解用户需求并提供解决方案。',
-    },
-    {
-      key: '2-2',
-      icon: <SmileOutlined />,
-      label: '角色',
-      description: 'AI 的公众形象和个性',
-    },
-    {
-      key: '2-3',
-      icon: <CommentOutlined />,
-      label: '对话',
-      description: 'AI 如何以用户理解的方式表达自己',
-    },
-    {
-      key: '2-4',
-      icon: <PaperClipOutlined />,
-      label: '界面',
-      description: 'AI 平衡"聊天"和"执行"行为。',
-    },
-  ],
-};
 
 const SENDER_PROMPTS: GetProp<typeof Prompts, 'items'> = [
   {
@@ -223,10 +159,6 @@ const useStyle = createStyles(({ token, css }) => {
       width: 100%;
       max-width: 700px;
       margin: 0 auto;
-    `,
-    speechButton: css`
-      font-size: 18px;
-      color: ${token.colorText} !important;
     `,
     senderPrompt: css`
       width: 100%;
@@ -516,42 +448,7 @@ const ProMode: React.FC = () => {
             title="你好，我是 myTab Chat"
             description="Open router 提供模型推理能力 | Ant Design X 提供界面解决方案"
           />
-          <Flex gap={16}>
-            <Prompts
-              items={[HOT_TOPICS]}
-              styles={{
-                list: { height: '100%' },
-                item: {
-                  flex: 1,
-                  backgroundImage: 'linear-gradient(123deg, #e5f4ff 0%, #efe7ff 100%)',
-                  borderRadius: 12,
-                  border: 'none',
-                },
-                subItem: { padding: 0, background: 'transparent' },
-              }}
-              onItemClick={(info) => {
-                onSubmit(info.data.description as string);
-              }}
-              className={styles.chatPrompt}
-            />
 
-            <Prompts
-              items={[DESIGN_GUIDE]}
-              styles={{
-                item: {
-                  flex: 1,
-                  backgroundImage: 'linear-gradient(123deg, #e5f4ff 0%, #efe7ff 100%)',
-                  borderRadius: 12,
-                  border: 'none',
-                },
-                subItem: { background: '#ffffffa6' },
-              }}
-              onItemClick={(info) => {
-                onSubmit(info.data.description as string);
-              }}
-              className={styles.chatPrompt}
-            />
-          </Flex>
         </Space>
       )}
     </div>
