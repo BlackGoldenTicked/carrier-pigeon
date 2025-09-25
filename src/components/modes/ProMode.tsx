@@ -13,9 +13,9 @@ import {
   PaperClipOutlined,
   PlusOutlined,
   ProductOutlined,
-  QuestionCircleOutlined,
   ReloadOutlined,
   ScheduleOutlined,
+  SendOutlined,
   ShareAltOutlined,
   SmileOutlined,
 } from '@ant-design/icons';
@@ -29,7 +29,7 @@ import {
   useXAgent,
   useXChat,
 } from '@ant-design/x';
-import { Avatar, Button, Flex, type GetProp, Space, Spin, message } from 'antd';
+import { Button, Flex, type GetProp, Space, Spin, message } from 'antd';
 import { createStyles } from 'antd-style';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
@@ -45,23 +45,14 @@ type BubbleDataType = {
   content: string;
 };
 
-const DEFAULT_CONVERSATIONS_ITEMS = [
-  {
-    key: 'default-0',
-    label: '什么是 Ant Design X？',
-    group: '今天',
-  },
-  {
-    key: 'default-1',
-    label: '如何快速安装和导入组件？',
-    group: '今天',
-  },
-  {
-    key: 'default-2',
-    label: '新的 AGI 混合界面',
-    group: '昨天',
-  },
-];
+/**
+ * 创建默认新对话
+ */
+const createDefaultConversation = () => ({
+  key: 'new-conversation',
+  label: '新对话',
+  group: '今天',
+});
 
 const HOT_TOPICS = {
   key: '1',
@@ -199,13 +190,6 @@ const useStyle = createStyles(({ token, css }) => {
         padding-inline-start: 0;
       }
     `,
-    siderFooter: css`
-      border-top: 1px solid ${token.colorBorderSecondary};
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    `,
     // chat list 样式
     chat: css`
       height: 100%;
@@ -276,8 +260,9 @@ const ProMode: React.FC = () => {
 
   // ==================== State ====================
   const [messageHistory, setMessageHistory] = useState<Record<string, any>>({});
-  const [conversations, setConversations] = useState(DEFAULT_CONVERSATIONS_ITEMS);
-  const [curConversation, setCurConversation] = useState(DEFAULT_CONVERSATIONS_ITEMS[0].key);
+  const defaultConversation = createDefaultConversation();
+  const [conversations, setConversations] = useState([defaultConversation]);
+  const [curConversation, setCurConversation] = useState(defaultConversation.key);
   const [attachmentsOpen, setAttachmentsOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<GetProp<typeof Attachments, 'items'>>([]);
   const [inputValue, setInputValue] = useState('');
@@ -473,40 +458,34 @@ const ProMode: React.FC = () => {
         }}
         groupable
         styles={{ item: { padding: '0 8px' } }}
-        menu={(conversation) => ({
+        menu={(conversation: any) => ({
           items: [
-            {
-              label: '重命名',
-              key: 'rename',
-              icon: <EditOutlined />,
-            },
             {
               label: '删除',
               key: 'delete',
               icon: <DeleteOutlined />,
               danger: true,
               onClick: () => {
-                const newList = conversations.filter((item) => item.key !== conversation.key);
+                // 如果只有一个对话，不允许删除
+                if (conversations.length <= 1) {
+                  message.warning('至少需要保留一个对话');
+                  return;
+                }
+                
+                const newList = conversations.filter((item: any) => item.key !== conversation.key);
                 const newKey = newList?.[0]?.key;
                 setConversations(newList);
-                // 删除操作修改 curConversation 并触发 onActiveChange，因此需要延迟执行以确保最终正确覆盖
-                // 此功能将在未来版本中修复
-                setTimeout(() => {
-                  if (conversation.key === curConversation) {
-                    setCurConversation(newKey);
-                    setMessages(messageHistory?.[newKey] || []);
-                  }
-                }, 200);
+                
+                // 如果删除的是当前对话，切换到第一个对话
+                if (conversation.key === curConversation) {
+                  setCurConversation(newKey);
+                  setMessages(messageHistory?.[newKey] || []);
+                }
               },
             },
           ],
         })}
       />
-
-      <div className={styles.siderFooter}>
-        <Avatar size={24} />
-        <Button type="text" icon={<QuestionCircleOutlined />} />
-      </div>
     </div>
   );
 
@@ -549,14 +528,8 @@ const ProMode: React.FC = () => {
           <Welcome
             variant="borderless"
             icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
-            title="你好，我是 Ant Design X"
-            description="基于 Ant Design，AGI 产品界面解决方案，创造更好的智能视觉体验~"
-            extra={
-              <Space>
-                <Button icon={<ShareAltOutlined />} />
-                <Button icon={<EllipsisOutlined />} />
-              </Space>
-            }
+            title="你好，我是 myTab Chat"
+            description="基于 Open router 提供的模型能力和 Ant Design X 界面解决方案，提供简单便捷的对话服务~"
           />
           <Flex gap={16}>
             <Prompts
@@ -648,22 +621,25 @@ const ProMode: React.FC = () => {
         onCancel={() => {
           abortController.current?.abort();
         }}
-        prefix={
-          <Button
-            type="text"
-            icon={<PaperClipOutlined style={{ fontSize: 18 }} />}
-            onClick={() => setAttachmentsOpen(!attachmentsOpen)}
-          />
-        }
         loading={loading}
         className={styles.sender}
-        allowSpeech
         actions={(_, info) => {
-          const { SendButton, LoadingButton, SpeechButton } = info.components;
+          const { LoadingButton } = info.components;
           return (
             <Flex gap={4}>
-              <SpeechButton className={styles.speechButton} />
-              {loading ? <LoadingButton type="default" /> : <SendButton type="primary" />}
+              {loading ? (
+                <LoadingButton type="default" />
+              ) : (
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  onClick={() => {
+                    onSubmit(inputValue);
+                    setInputValue('');
+                  }}
+                  disabled={!inputValue.trim()}
+                />
+              )}
             </Flex>
           );
         }}
