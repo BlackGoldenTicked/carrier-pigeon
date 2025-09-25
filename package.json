@@ -15,6 +15,7 @@
     "@ant-design/x": "^1.6.1",
     "@plasmohq/storage": "^1.9.0",
     "antd": "^5.27.4",
+    "antd-style": "^3.7.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "dayjs": "^1.11.18",
