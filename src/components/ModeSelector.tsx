@@ -64,7 +64,9 @@ export default function ModeSelector({ currentMode, onModeChange, onClose }: Mod
       if (event.key === 'Escape') {
         onClose()
       }
-      if (event.key >= '1' && event.key <= '3') {
+      // Command+数字键快速切换模式
+      if ((event.metaKey || event.ctrlKey) && event.key >= '1' && event.key <= '3') {
+        event.preventDefault()
         const modes = [TabMode.MINIMAL, TabMode.NORMAL, TabMode.PRO]
         const index = parseInt(event.key) - 1
         if (modes[index]) {

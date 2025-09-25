@@ -1068,17 +1068,20 @@ function NewTabPage() {
         return
       }
 
-      // 数字键快速切换模式（仅在模式选择面板未打开时）
-      if (!isModeSelectorOpen && !showPopupMenu) {
+      // Command+数字键快速切换模式（仅在模式选择面板未打开时）
+      if (!isModeSelectorOpen && !showPopupMenu && (e.metaKey || e.ctrlKey)) {
         const modes = Object.keys(modeConfig)
         switch (e.key) {
           case '1':
+            e.preventDefault()
             if (modes[0]) handleModeChange(modes[0])
             break
           case '2':
+            e.preventDefault()
             if (modes[1]) handleModeChange(modes[1])
             break
           case '3':
+            e.preventDefault()
             if (modes[2]) handleModeChange(modes[2])
             break
         }

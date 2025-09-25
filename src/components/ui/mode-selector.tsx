@@ -45,13 +45,25 @@ export function ModeSelector({
           onClose()
           break
         case '1':
-          handleModeSelect(0)
+          // Command+数字键快速切换模式
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault()
+            handleModeSelect(0)
+          }
           break
         case '2':
-          handleModeSelect(1)
+          // Command+数字键快速切换模式
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault()
+            handleModeSelect(1)
+          }
           break
         case '3':
-          handleModeSelect(2)
+          // Command+数字键快速切换模式
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault()
+            handleModeSelect(2)
+          }
           break
 
         case 'Enter':
