@@ -425,7 +425,7 @@ const ProMode: React.FC = () => {
           width={24}
           height={24}
         />
-        <span>Ant Design X</span>
+        <span> The Chat </span>
       </div>
 
       {/* 🌟 添加会话 */}
