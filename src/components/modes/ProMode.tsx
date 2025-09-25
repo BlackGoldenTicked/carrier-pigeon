@@ -153,6 +153,8 @@ const useStyle = createStyles(({ token, css }) => {
     `,
     placeholder: css`
       padding-top: 32px;
+      display: flex !important;
+      width: 100%;
     `,
     // sender 样式
     sender: css`
