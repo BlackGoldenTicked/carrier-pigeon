@@ -443,7 +443,10 @@ const ProMode: React.FC = () => {
           className={styles.placeholder}
         >
           <Welcome
-            variant="borderless"
+            style={{
+              backgroundImage: 'linear-gradient(97deg, #f2f9fe 0%, #f7f3ff 100%)',
+              borderStartStartRadius: 4,
+            }}
             icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
             title="你好，我是 myTab Chat"
             description="Open router 提供模型推理能力 | Ant Design X 提供界面解决方案"
