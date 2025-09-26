@@ -10,6 +10,7 @@ import {
   ProductOutlined,
   ScheduleOutlined,
   SendOutlined,
+  SettingOutlined,
   SmileOutlined,
 } from '@ant-design/icons';
 import {
@@ -108,6 +109,10 @@ const useStyle = createStyles(({ token, css }) => {
       background: #1677ff0f;
       border: 1px solid #1677ff34;
       height: 40px;
+      padding: 0 24px;
+      box-sizing: border-box;
+      gap: 8px;
+      margin: 24px 0;
     `,
     conversations: css`
       flex: 1;
@@ -209,10 +214,17 @@ const ProMode: React.FC = () => {
    * OpenRouter Agent 配置
    */
   // ==================== Runtime ====================
+  console.log('useXAgent 配置:', {
+    baseURL: openRouterConfig.baseURL,
+    model: openRouterConfig.model,
+    hasApiKey: !!openRouterConfig.apiKey,
+    apiKeyLength: openRouterConfig.apiKey?.length || 0
+  });
+  
   const [agent] = useXAgent<BubbleDataType>({
     baseURL: openRouterConfig.baseURL,
     model: openRouterConfig.model,
-    dangerouslyApiKey: openRouterConfig.apiKey ? `Bearer ${openRouterConfig.apiKey}` : 'Bearer sk-xxxxxxxxxxxxxxxxxxxx',
+    dangerouslyApiKey: openRouterConfig.apiKey || 'sk-xxxxxxxxxxxxxxxxxxxx',
   });
   const loading = agent.isRequesting();
 
@@ -328,18 +340,6 @@ const ProMode: React.FC = () => {
   // ==================== Nodes ====================
   const chatSider = (
     <div className={styles.sider}>
-      {/* 🌟 Logo */}
-      <div className={styles.logo}>
-        <img
-          src="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*eco6RrQhxbMAAAAAAAAAAAAADgCCAQ/original"
-          draggable={false}
-          alt="logo"
-          width={24}
-          height={24}
-        />
-        <span> myTab Chat </span>
-      </div>
-
       {/* 🌟 添加会话 */}
       <Button
         onClick={() => {
@@ -428,7 +428,7 @@ const ProMode: React.FC = () => {
             },
             typing: i.status === 'loading' ? { step: 5, interval: 20, suffix: <>💗</> } : false,
           }))}
-          style={{ height: '100%', paddingInline: 'calc(calc(100% - 700px) /2)' }}
+          style={{ height: '100%', maxWidth: '700px', margin: '0 auto', width: '100%' }}
           roles={{
             assistant: {
               placement: 'start',
@@ -441,7 +441,7 @@ const ProMode: React.FC = () => {
         <Space
           direction="vertical"
           size={16}
-          style={{ paddingInline: 'calc(calc(100% - 700px) /2)' }}
+          style={{ maxWidth: '700px', margin: '0 auto', width: '100%' }}
           className={styles.placeholder}
         >
           <Welcome
@@ -449,7 +449,7 @@ const ProMode: React.FC = () => {
               backgroundImage: 'linear-gradient(97deg, #f2f9fe 0%, #f7f3ff 100%)',
               borderStartStartRadius: 4,
             }}
-            icon="https://mdn.alipayobjects.com/huamei_iwk9zp/afts/img/A*s5sNRo5LjfQAAAAAAAAAAAAADgCCAQ/fmt.webp"
+            icon="https://chaordex-oss.oss-cn-hangzhou.aliyuncs.com/mycat.png"
             title="你好，我是 myTab Chat"
             description="Open router 提供模型推理能力 | Ant Design X 提供界面解决方案"
           />
@@ -547,17 +547,22 @@ const ProMode: React.FC = () => {
 
   // 初始化 OpenRouter 服务
   useEffect(() => {
+    console.log('OpenRouter 配置更新:', openRouterConfig);
     if (openRouterConfig.apiKey) {
+      console.log('初始化 OpenRouter 服务...');
       const service = new OpenRouterService(openRouterConfig);
       setOpenRouterService(service);
+    } else {
+      console.log('API Key 为空，未初始化 OpenRouter 服务');
+      setOpenRouterService(null);
     }
   }, [openRouterConfig]);
 
   // ==================== API 配置弹窗 ====================
   const ApiConfigModal = () => {
     const [form, setForm] = useState({
-      apiKey: localStorage.getItem('openrouter_api_key') || '',
-      model: localStorage.getItem('openrouter_model') || 'anthropic/claude-3-haiku',
+      apiKey: openRouterConfig.apiKey,
+      model: openRouterConfig.model,
     });
     const [availableModels, setAvailableModels] = useState<Array<{id: string, name: string}>>([]);
     const [loadingModels, setLoadingModels] = useState(false);
@@ -599,6 +604,14 @@ const ProMode: React.FC = () => {
         setLoadingModels(false);
       }
     };
+
+    // 同步外部配置到表单
+    useEffect(() => {
+      setForm({
+        apiKey: openRouterConfig.apiKey,
+        model: openRouterConfig.model,
+      });
+    }, [openRouterConfig]);
 
     // 当 API Key 改变时，重新获取模型列表
     useEffect(() => {
@@ -727,6 +740,15 @@ const ProMode: React.FC = () => {
         {chatList}
         {chatSender}
       </div>
+
+      {/* 🌟 配置按钮 */}
+      <Button
+        type="text"
+        icon={<SettingOutlined />}
+        onClick={showApiConfig}
+        className={styles.configButton}
+        title="API 配置"
+      />
 
       <ApiConfigModal />
     </div>
