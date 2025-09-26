@@ -16,28 +16,73 @@ export class OpenRouterService {
    * @returns 流式响应
    */
   async sendMessage(messages: ChatMessage[]): Promise<ReadableStream<string>> {
+    // 验证 API Key 格式
+    if (!this.config.apiKey || !this.config.apiKey.startsWith('sk-or-')) {
+      throw new Error('Invalid API Key format. OpenRouter API Key should start with "sk-or-"');
+    }
+
+    const requestBody = {
+      model: this.config.model,
+      messages: messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      })),
+      stream: true,
+      temperature: 0.7,
+      max_tokens: 2048
+    };
+
+    console.log('OpenRouter 请求配置:', {
+      url: `${this.config.baseURL}/chat/completions`,
+      model: this.config.model,
+      hasApiKey: !!this.config.apiKey,
+      apiKeyLength: this.config.apiKey?.length || 0,
+      apiKeyPrefix: this.config.apiKey?.substring(0, 6) + '...',
+      messagesCount: messages.length,
+      requestBody: JSON.stringify(requestBody, null, 2)
+    });
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${this.config.apiKey}`,
+      'HTTP-Referer': window.location.origin,
+      'X-Title': 'MyTab AI Chat'
+    };
+
+    console.log('请求 headers:', headers);
+
     const response = await fetch(`${this.config.baseURL}/chat/completions`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'MyTab AI Chat'
-      },
-      body: JSON.stringify({
-        model: this.config.model,
-        messages: messages.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        })),
-        stream: true,
-        temperature: 0.7,
-        max_tokens: 2048
-      })
-    })
+      headers,
+      body: JSON.stringify(requestBody)
+    });
+
+    console.log('OpenRouter 响应状态:', {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('content-type'),
+      ok: response.ok
+    });
 
     if (!response.ok) {
-      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`)
+      // 尝试读取错误响应内容
+      let errorText = '';
+      try {
+        errorText = await response.text();
+        console.error('OpenRouter 错误响应内容:', errorText);
+      } catch (e) {
+        console.error('无法读取错误响应:', e);
+      }
+      
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}. Response: ${errorText}`);
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (contentType && !contentType.includes('text/plain') && !contentType.includes('application/json')) {
+      console.error('意外的响应类型:', contentType);
+      const responseText = await response.text();
+      console.error('响应内容:', responseText);
+      throw new Error(`Unexpected response content-type: ${contentType}. Expected text/plain or application/json for streaming.`);
     }
 
     if (!response.body) {

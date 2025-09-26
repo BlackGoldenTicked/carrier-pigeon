@@ -622,9 +622,17 @@ const ProMode: React.FC = () => {
       }
     }, [form.apiKey, configVisible]);
 
+    // 验证 API Key 格式
+    const validateApiKey = (apiKey: string): boolean => {
+      if (!apiKey) return false;
+      // OpenRouter API Key 应该以 sk-or- 开头
+      return apiKey.startsWith('sk-or-') && apiKey.length > 10;
+    };
+
     const handleSave = () => {
-      if (!form.apiKey) {
-        message.error('请输入 API Key');
+      // 验证 API Key 格式
+      if (!validateApiKey(form.apiKey)) {
+        message.error('API Key 格式不正确，OpenRouter API Key 应该以 "sk-or-" 开头');
         return;
       }
       localStorage.setItem('openrouter_api_key', form.apiKey);

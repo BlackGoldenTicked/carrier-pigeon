@@ -54,9 +54,6 @@ npm run dev
 ```javascript
 // 测试 ProMode 集成配置
 window.testProModeIntegration()
-
-// 测试 OpenRouter 服务（需要有效的 API Key）
-window.testOpenRouter()
 ```
 
 ## 测试检查清单
