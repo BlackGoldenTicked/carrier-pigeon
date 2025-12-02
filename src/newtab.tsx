@@ -96,7 +96,11 @@ const allAIModels = defaultAIModelCategories.flatMap(category => category.models
  */
 function NormalMode() {
   const [selectedLinks, setSelectedLinks] = useState(new Set())
-  const [selectedModels, setSelectedModels] = useState(new Set()) // 不默认选择任何模型
+  /**
+   * 模型选择集合
+   * 默认选中 Kimi，提升一般模式的开箱即用体验
+   */
+  const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set(["kimi"]))
   const [inputText, setInputText] = useState('')
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionStart, setSelectionStart] = useState(null)
@@ -179,6 +183,23 @@ function NormalMode() {
         const mergedConfig = mergeConfigs(storedConfig, jsonDefaultConfig)
         
         setConfig(mergedConfig)
+        /**
+         * 加载配置并同步默认模型选择（优先选中 Kimi）
+         * 若 Kimi 在当前配置中启用，则保持默认选中；否则移除
+         */
+        if (mergedConfig.basicModels.some((m) => m.id === "kimi" && m.enabled)) {
+          setSelectedModels((prev) => {
+            const next = new Set(prev)
+            next.add("kimi")
+            return next
+          })
+        } else {
+          setSelectedModels((prev) => {
+            const next = new Set(prev)
+            next.delete("kimi")
+            return next
+          })
+        }
         
         // 如果配置有变化，同步到storage
         if (!storedConfig || JSON.stringify(storedConfig) !== JSON.stringify(mergedConfig)) {
@@ -420,7 +441,7 @@ function NormalMode() {
        if (text && text.trim()) {
          // 支持自动填充的模型列表
           const supportedModels: Record<string, { url: string[]; action: string }> = {
-            'gpt-4': { url: ['chatgpt.com', 'chat.openai.com'], action: 'autoFillAndSend' },
+            'ChatGPT': { url: ['chatgpt.com', 'chat.openai.com'], action: 'autoFillAndSend' },
             'claude-3': { url: ['claude.ai'], action: 'fillAndSend' },
             'kimi': { url: ['kimi.moonshot.cn'], action: 'fillAndSend' },
             'gemini': { url: ['gemini.google.com'], action: 'fillAndSend' },

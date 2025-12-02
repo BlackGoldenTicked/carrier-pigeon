@@ -6,8 +6,8 @@
       "description": "专注于文本生成和对话的AI模型",
       "models": [
         {
-          "id": "gpt-4",
-          "name": "GPT-4",
+          "id": "ChatGPT",
+          "name": "ChatGPT",
           "type": "language",
           "url": "https://chat.openai.com",
           "selectedColor": "#10a37f"

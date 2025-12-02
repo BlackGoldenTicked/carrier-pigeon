@@ -39,8 +39,8 @@ export function ApiConfig({ visible, onClose, onSave }: ApiConfigProps) {
       description: '最强性能，适合专业工作'
     },
     {
-      value: 'openai/gpt-4-turbo',
-      label: 'GPT-4 Turbo',
+      value: 'openai/ChatGPT-turbo',
+      label: 'ChatGPT Turbo',
       description: '强大的多模态能力'
     },
     {

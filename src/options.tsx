@@ -139,7 +139,7 @@ const defaultConfig: ConfigData = {
   links: loadLinksFromJSON(),
   basicModels: loadBasicModelsFromJSON(),
   models: [
-    { id: 'gpt-4', name: 'GPT-4', type: 'llm', enabled: true },
+    { id: 'ChatGPT', name: 'ChatGPT', type: 'llm', enabled: true },
     { id: 'claude', name: 'Claude', type: 'llm', enabled: true },
     { id: 'gemini', name: 'Gemini', type: 'llm', enabled: true },
     { id: 'whisper', name: 'Whisper', type: 'voice', enabled: false },
