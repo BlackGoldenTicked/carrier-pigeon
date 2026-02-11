@@ -127,7 +127,8 @@ const loadLinksFromJSON = (): LinkConfig[][] => {
     row.map(link => ({
       id: link.id,
       title: link.title,
-      url: link.url
+      url: link.url,
+      icon: (link as any).icon ?? (link as any).favicon ?? (link as any).favIcon
     }))
   )
 }

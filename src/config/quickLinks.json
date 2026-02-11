@@ -29,7 +29,7 @@
         "id": 5,
         "title": "z",
         "url": "https://www.chaordex.com",
-        "icon": "https://www.chaordex.com/favicon.ico"
+        "icon": "https://chaordex-oss.oss-cn-hangzhou.aliyuncs.com/chaordex.ico"
       }
     ],
     [
@@ -43,7 +43,7 @@
         "id": 7,
         "title": "Touzi",
         "url": "https://touzi.ws",
-        "icon": "https://touzi.ws/favicon.ico"
+        "icon": "https://chaordex-oss.oss-cn-hangzhou.aliyuncs.com/touzi.ico"
       },
       {
         "id": 8,
@@ -61,7 +61,7 @@
         "id": 10,
         "title": "Index",
         "url": "https://yinghezhinan.com/",
-        "icon": "https://yinghezhinan.com/favicon.ico"
+        "icon": "https://chaordex-oss.oss-cn-hangzhou.aliyuncs.com/index.ico"
       }
     ]
   ]

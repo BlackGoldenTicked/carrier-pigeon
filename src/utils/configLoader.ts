@@ -141,7 +141,14 @@ export class ConfigLoader {
     
     if (!this.quickLinksData || !this.isCacheValid(cacheKey)) {
       const startTime = Date.now()
-      this.quickLinksData = quickLinksConfig.quickLinks
+      this.quickLinksData = (quickLinksConfig.quickLinks as any).map((row: any[]) =>
+        row.map((link: any) => ({
+          id: link.id,
+          title: link.title,
+          url: link.url,
+          icon: link.icon ?? link.favicon ?? link.favIcon
+        }))
+      )
       this.setCacheTimestamp(cacheKey)
       this.recordLoadTime(cacheKey, startTime)
     }
