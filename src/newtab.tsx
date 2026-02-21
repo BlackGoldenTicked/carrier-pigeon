@@ -9,7 +9,6 @@ import { AIModelCategory, PerformanceMode } from './types'
 import { useFontSettings } from './hooks/useFontSettings'
 import { fontInjector } from './utils/fontInjector'
 import { PerformanceOptimizer } from './utils/performanceOptimizer'
-import ProMode from './components/modes/ProMode'
 
 
 /**
@@ -1102,10 +1101,6 @@ function NewTabPage() {
             e.preventDefault()
             if (modes[1]) handleModeChange(modes[1])
             break
-          case '3':
-            e.preventDefault()
-            if (modes[2]) handleModeChange(modes[2])
-            break
         }
       }
     }
@@ -1129,37 +1124,23 @@ function NewTabPage() {
 
     // 对于其他模式，如果还在加载中，显示与目标模式匹配的加载状态
     if (isLoading) {
-      switch (currentMode) {
-        case TabMode.PRO:
-          return (
-            <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-purple-900 flex items-center justify-center">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">加载中...</p>
-              </div>
+      // NORMAL模式的加载状态 - 显示简化版本避免闪烁
+      return (
+        <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">加载中...</p>
             </div>
-          )
-        default:
-          // NORMAL模式的加载状态 - 显示简化版本避免闪烁
-          return (
-            <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900">
-              <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-400">加载中...</p>
-                </div>
-              </div>
-            </div>
-          )
-      }
+          </div>
+        </div>
+      )
     }
 
     // 加载完成后渲染完整内容
     switch (currentMode) {
       case TabMode.NORMAL:
          return <NormalMode />
-      case TabMode.PRO:
-        return <ProMode />
 
       default:
         return <NormalMode />

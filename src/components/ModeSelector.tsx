@@ -25,12 +25,6 @@ const modeConfig = {
     description: '快捷链接和AI对话，平衡功能与简洁',
     icon: '◐',
     color: 'from-blue-100 to-indigo-200 dark:from-blue-900 dark:to-indigo-900'
-  },
-  [TabMode.PRO]: {
-    title: 'Pro 模式',
-    description: '完整的AI对话界面，专业用户首选',
-    icon: '●',
-    color: 'from-purple-100 to-pink-200 dark:from-purple-900 dark:to-pink-900'
   }
 }
 
@@ -65,9 +59,9 @@ export default function ModeSelector({ currentMode, onModeChange, onClose }: Mod
         onClose()
       }
       // Command+数字键快速切换模式
-      if ((event.metaKey || event.ctrlKey) && event.key >= '1' && event.key <= '3') {
+      if ((event.metaKey || event.ctrlKey) && event.key >= '1' && event.key <= '2') {
         event.preventDefault()
-        const modes = [TabMode.MINIMAL, TabMode.NORMAL, TabMode.PRO]
+        const modes = [TabMode.MINIMAL, TabMode.NORMAL]
         const index = parseInt(event.key) - 1
         if (modes[index]) {
           handleModeSelect(modes[index])
@@ -103,7 +97,7 @@ export default function ModeSelector({ currentMode, onModeChange, onClose }: Mod
               选择新标签页模式
             </CardTitle>
             <CardDescription className="text-base">
-              使用数字键 1-3 快速切换，或点击下方卡片选择模式
+              使用数字键 1-2 快速切换，或点击下方卡片选择模式
             </CardDescription>
           </CardHeader>
           

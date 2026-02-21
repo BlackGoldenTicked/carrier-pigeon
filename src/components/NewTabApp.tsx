@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { TabMode } from '@/types'
 import MinimalMode from './modes/MinimalMode'
 import NormalMode from './modes/NormalMode'
-import ProMode from './modes/ProMode'
 import ModeSelector from './ModeSelector'
 import { cn } from '@/lib/utils'
 
@@ -23,7 +22,7 @@ export default function NewTabApp() {
       try {
         // 从本地存储加载用户选择的模式
         const savedMode = localStorage.getItem('newtab-mode')
-        if (savedMode && Object.values(TabMode).includes(savedMode as TabMode)) {
+        if (savedMode && (savedMode === TabMode.MINIMAL || savedMode === TabMode.NORMAL)) {
           setCurrentMode(savedMode as TabMode)
         }
         
@@ -99,8 +98,6 @@ export default function NewTabApp() {
         return <MinimalMode />
       case TabMode.NORMAL:
         return <NormalMode />
-      case TabMode.PRO:
-        return <ProMode />
       default:
         return <MinimalMode />
     }
@@ -110,8 +107,7 @@ export default function NewTabApp() {
     <div className={cn(
       "min-h-screen transition-all duration-300",
       currentMode === TabMode.MINIMAL && "bg-white dark:bg-gray-900",
-      currentMode === TabMode.NORMAL && "bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800",
-      currentMode === TabMode.PRO && "bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-purple-900"
+      currentMode === TabMode.NORMAL && "bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800"
     )}>
       {/* 模式选择器 */}
       {showModeSelector && (

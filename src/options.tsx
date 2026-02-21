@@ -69,27 +69,8 @@ interface BasicModelConfig {
   selectedColor?: string
 }
 
-/**
- * Pro模式模型配置接口
- * 包含API配置信息
- */
-interface ProModelConfig {
-  id: string
-  name: string
-  type: 'llm' | 'voice' | 'image' | 'video'
-  apiKey?: string
-  endpoint?: string
-  enabled: boolean
-}
-
-/**
- * 兼容旧版本的模型配置接口
- */
-interface ModelConfig extends ProModelConfig {}
-
 interface ConfigData {
   links: LinkConfig[][]
-  models: ModelConfig[]
   basicModels: BasicModelConfig[]  // 一般模式模型配置
   theme: 'light' | 'dark'
   performanceSettings: PerformanceSettings  // 性能配置
@@ -139,14 +120,6 @@ const loadLinksFromJSON = (): LinkConfig[][] => {
 const defaultConfig: ConfigData = {
   links: loadLinksFromJSON(),
   basicModels: loadBasicModelsFromJSON(),
-  models: [
-    { id: 'ChatGPT', name: 'ChatGPT', type: 'llm', enabled: true },
-    { id: 'claude', name: 'Claude', type: 'llm', enabled: true },
-    { id: 'gemini', name: 'Gemini', type: 'llm', enabled: true },
-    { id: 'whisper', name: 'Whisper', type: 'voice', enabled: false },
-    { id: 'dall-e', name: 'DALL-E', type: 'image', enabled: false },
-    { id: 'midjourney', name: 'Midjourney', type: 'image', enabled: false }
-  ],
   theme: 'light',
   performanceSettings: {
     mode: PerformanceMode.EFFICIENT,
@@ -170,11 +143,10 @@ const defaultConfig: ConfigData = {
 function OptionsPage() {
   const [config, setConfig] = useState<ConfigData>(defaultConfig)
   const [activeTab, setActiveTab] = useState<'general' | 'links' | 'models' | 'fonts' | 'performance'>('general')
-  const [modelFilter, setModelFilter] = useState<'all' | 'llm' | 'voice' | 'image' | 'video' | 'language' | 'multimedia'>('all')
+  const [modelFilter, setModelFilter] = useState<'all' | 'language' | 'multimedia'>('all')
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
-  const [editingCell, setEditingCell] = useState<{type: 'link' | 'model' | 'basicModel', id: string | number, field: string} | null>(null)
-  const [isProMode, setIsProMode] = useState(false)  // 模式切换状态
+  const [editingCell, setEditingCell] = useState<{type: 'link' | 'basicModel', id: string | number, field: string} | null>(null)
 
   /**
    * 初始化主题检测
@@ -426,32 +398,6 @@ function OptionsPage() {
     newConfig.basicModels.push(newModel)
     saveConfig(newConfig)
   }
-
-  /**
-   * 添加新模型（Pro模式）
-   */
-  const addModel = () => {
-    // 确定要添加的模型类型
-    const targetType = modelFilter === 'all' ? 'llm' : modelFilter
-    
-    // 检查该类型的模型数量是否已达到限制
-    const modelsOfType = config.models.filter(model => model.type === targetType)
-    if (modelsOfType.length >= 6) {
-      alert(`${getTypeDisplayName(targetType)}类型的模型最多只能添加6个`)
-      return
-    }
-    
-    const newModel: ModelConfig = {
-      id: `model-${Date.now()}`,
-      name: '新模型',
-      type: targetType as 'llm' | 'voice' | 'image' | 'video',
-      enabled: false
-    }
-    
-    const newConfig = { ...config }
-    newConfig.models.push(newModel)
-    saveConfig(newConfig)
-  }
   
   /**
    * 获取基础模型类型的显示名称
@@ -460,19 +406,6 @@ function OptionsPage() {
     const typeNames = {
       'language': '语言模型',
       'multimedia': '多媒体模型'
-    }
-    return typeNames[type as keyof typeof typeNames] || type
-  }
-
-  /**
-   * 获取Pro模型类型的显示名称
-   */
-  const getTypeDisplayName = (type: string) => {
-    const typeNames = {
-      'llm': '语言模型',
-      'voice': '语音模型', 
-      'image': '图像模型',
-      'video': '视频模型'
     }
     return typeNames[type as keyof typeof typeNames] || type
   }
@@ -503,38 +436,6 @@ function OptionsPage() {
   }
 
   /**
-   * 更新Pro模型字段
-   */
-  const updateModelField = (modelId: string, field: string, value: string | boolean) => {
-    const newConfig = { ...config }
-    const modelIndex = newConfig.models.findIndex(m => m.id === modelId)
-    
-    if (modelIndex !== -1) {
-      newConfig.models[modelIndex] = {
-        ...newConfig.models[modelIndex],
-        [field]: value
-      }
-      saveConfig(newConfig)
-    }
-  }
-
-  /**
-   * 删除Pro模型
-   */
-  const deleteModel = (modelId: string) => {
-    const newConfig = { ...config }
-    newConfig.models = newConfig.models.filter(m => m.id !== modelId)
-    saveConfig(newConfig)
-  }
-
-  /**
-   * 切换Pro模型启用状态
-   */
-  const toggleModel = (modelId: string) => {
-    updateModelField(modelId, 'enabled', !config.models.find(m => m.id === modelId)?.enabled)
-  }
-
-  /**
    * 切换基础模型启用状态
    */
   const toggleBasicModel = (modelId: string) => {
@@ -544,7 +445,7 @@ function OptionsPage() {
   /**
    * 处理单元格编辑
    */
-  const handleCellEdit = (type: 'link' | 'model' | 'basicModel', id: string | number, field: string) => {
+  const handleCellEdit = (type: 'link' | 'basicModel', id: string | number, field: string) => {
     setEditingCell({ type, id, field })
   }
 
@@ -557,8 +458,6 @@ function OptionsPage() {
         updateLinkField(editingCell.id as number, editingCell.field, value)
       } else if (editingCell.type === 'basicModel') {
         updateBasicModelField(editingCell.id as string, editingCell.field, value)
-      } else {
-        updateModelField(editingCell.id as string, editingCell.field, value)
       }
     }
     setEditingCell(null)
@@ -686,22 +585,13 @@ function OptionsPage() {
   }
 
   /**
-   * 过滤Pro模型
-   */
-  const filteredModels = config.models.filter(model => 
-    modelFilter === 'all' || model.type === modelFilter
-  )
-
-  /**
    * 过滤基础模型
    */
   const filteredBasicModels = config.basicModels.filter(model => {
     if (modelFilter === 'all') return true
     if (modelFilter === 'language') return model.type === 'language'
     if (modelFilter === 'multimedia') return model.type === 'multimedia'
-    // 兼容旧的筛选器
-    if (modelFilter === 'llm') return model.type === 'language'
-    return model.type === 'multimedia'
+    return true
   })
 
   return (
@@ -1075,98 +965,45 @@ function OptionsPage() {
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-lg font-medium text-gray-900 dark:text-white">模型管理</h2>
                   
-                  {/* 模式切换 */}
-                  <div className="flex items-center space-x-4">
-                    <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                      <button
-                        onClick={() => setIsProMode(false)}
-                        className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                          !isProMode
-                            ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                        }`}
-                      >
-                        一般模式
-                      </button>
-                      <button
-                        onClick={() => setIsProMode(true)}
-                        className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                          isProMode
-                            ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                        }`}
-                      >
-                        Pro模式
-                      </button>
-                    </div>
-                    
-                    <div className="flex flex-col items-end">
-                      <button
-                        onClick={isProMode ? addModel : addBasicModel}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                      >
-                        + 添加模型
-                      </button>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {isProMode ? (() => {
-                          const targetType = modelFilter === 'all' ? 'llm' : modelFilter
-                          const modelsOfType = config.models.filter(model => model.type === targetType)
-                          const typeName = getTypeDisplayName(targetType)
-                          return `${typeName}: ${modelsOfType.length}/6`
-                        })() : (() => {
-                          const targetType = modelFilter === 'all' ? 'language' : 
-                                            (modelFilter === 'language' ? 'language' : 'multimedia')
-                          const modelsOfType = config.basicModels.filter(model => model.type === targetType)
-                          const typeName = getBasicTypeDisplayName(targetType)
-                          return `${typeName}: ${modelsOfType.length}/6`
-                        })()}
-                      </p>
-                    </div>
+                  <div className="flex flex-col items-end">
+                    <button
+                      onClick={addBasicModel}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      + 添加模型
+                    </button>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {(() => {
+                        const targetType = modelFilter === 'all' ? 'language' : 
+                                          (modelFilter === 'language' ? 'language' : 'multimedia')
+                        const modelsOfType = config.basicModels.filter(model => model.type === targetType)
+                        const typeName = getBasicTypeDisplayName(targetType)
+                        return `${typeName}: ${modelsOfType.length}/6`
+                      })()}
+                    </p>
                   </div>
                 </div>
                 
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                  {isProMode 
-                    ? '点击单元格直接编辑，失去焦点自动保存。每种类型最多支持6个模型。'
-                    : '一般模式下只需配置模型的页面地址，数据来源于JSON配置文件。'
-                  }
+                  一般模式下只需配置模型的页面地址，数据来源于JSON配置文件。
                 </p>
                 
                 {/* 模型筛选 */}
                 <div className="flex space-x-2 mb-6">
-                  {isProMode ? (
-                    (['all', 'llm', 'voice', 'image', 'video'] as const).map((filter) => (
-                      <button
-                        key={filter}
-                        onClick={() => setModelFilter(filter)}
-                        className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-                          modelFilter === filter
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                        }`}
-                      >
-                        {filter === 'all' ? '全部' : 
-                         filter === 'llm' ? '大语言模型' :
-                         filter === 'voice' ? '语音模型' :
-                         filter === 'image' ? '图片模型' : '视频模型'}
-                      </button>
-                    ))
-                  ) : (
-                    (['all', 'language', 'multimedia'] as const).map((filter) => (
-                      <button
-                        key={filter}
-                        onClick={() => setModelFilter(filter)}
-                        className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-                          modelFilter === filter
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                        }`}
-                      >
-                        {filter === 'all' ? '全部' : 
-                         filter === 'language' ? '语言模型' : '多媒体模型'}
-                      </button>
-                    ))
-                  )}
+                  {(['all', 'language', 'multimedia'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setModelFilter(filter)}
+                      className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                        modelFilter === filter
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {filter === 'all' ? '全部' : 
+                       filter === 'language' ? '语言模型' : '多媒体模型'}
+                    </button>
+                  ))}
                 </div>
 
                 {/* 模型表格 */}
@@ -1176,133 +1013,14 @@ function OptionsPage() {
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">名称</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">类型</th>
-                        {isProMode ? (
-                          <>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">API Key</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">端点</th>
-                          </>
-                        ) : (
-                          <>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">页面地址</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">颜色</th>
-                          </>
-                        )}
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">页面地址</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">颜色</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">状态</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wider">操作</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {isProMode ? (
-                        filteredModels.map((model) => (
-                        <tr key={model.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {editingCell?.type === 'model' && editingCell.id === model.id && editingCell.field === 'name' ? (
-                              <input
-                                type="text"
-                                defaultValue={model.name}
-                                onBlur={(e) => handleCellBlur(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                                className="w-full p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                autoFocus
-                              />
-                            ) : (
-                              <div
-                                onClick={() => handleCellEdit('model', model.id, 'name')}
-                                className="font-medium text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-1 rounded"
-                              >
-                                {model.name}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {editingCell?.type === 'model' && editingCell.id === model.id && editingCell.field === 'type' ? (
-                              <select
-                                defaultValue={model.type}
-                                onBlur={(e) => handleCellBlur(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                                className="p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                autoFocus
-                              >
-                                <option value="llm">大语言模型</option>
-                                <option value="voice">语音模型</option>
-                                <option value="image">图片模型</option>
-                                <option value="video">视频模型</option>
-                              </select>
-                            ) : (
-                              <div
-                                onClick={() => handleCellEdit('model', model.id, 'type')}
-                                className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-1 rounded"
-                              >
-                                {model.type === 'llm' ? '大语言模型' :
-                                 model.type === 'voice' ? '语音模型' :
-                                 model.type === 'image' ? '图片模型' : '视频模型'}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            {editingCell?.type === 'model' && editingCell.id === model.id && editingCell.field === 'apiKey' ? (
-                              <input
-                                type="password"
-                                defaultValue={model.apiKey || ''}
-                                onBlur={(e) => handleCellBlur(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                                className="w-full p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                placeholder="输入 API Key"
-                                autoFocus
-                              />
-                            ) : (
-                              <div
-                                onClick={() => handleCellEdit('model', model.id, 'apiKey')}
-                                className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-1 rounded truncate max-w-xs"
-                              >
-                                {model.apiKey ? '••••••••' : '点击设置'}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            {editingCell?.type === 'model' && editingCell.id === model.id && editingCell.field === 'endpoint' ? (
-                              <input
-                                type="url"
-                                defaultValue={model.endpoint || ''}
-                                onBlur={(e) => handleCellBlur(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-                                className="w-full p-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                placeholder="输入 API 端点"
-                                autoFocus
-                              />
-                            ) : (
-                              <div
-                                onClick={() => handleCellEdit('model', model.id, 'endpoint')}
-                                className="text-sm text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-1 rounded truncate max-w-xs"
-                              >
-                                {model.endpoint || '点击设置'}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <button
-                              onClick={() => toggleModel(model.id)}
-                              className={`px-3 py-1 rounded text-sm transition-colors ${
-                                model.enabled
-                                  ? 'bg-green-600 text-white'
-                                  : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                              }`}
-                            >
-                              {model.enabled ? '已启用' : '已禁用'}
-                            </button>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <button
-                              onClick={() => deleteModel(model.id)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                            >
-                              删除
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                      ) : (
-                        filteredBasicModels.map((model) => (
+                      {filteredBasicModels.map((model) => (
                         <tr key={model.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                           <td className="px-6 py-4 whitespace-nowrap">
                             {editingCell?.type === 'basicModel' && editingCell.id === model.id && editingCell.field === 'name' ? (
@@ -1391,7 +1109,7 @@ function OptionsPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <button
-                              onClick={() => updateBasicModelField(model.id, 'enabled', !model.enabled)}
+                              onClick={() => toggleBasicModel(model.id)}
                               className={`px-3 py-1 rounded text-sm transition-colors ${
                                 model.enabled
                                   ? 'bg-green-600 text-white'
@@ -1410,8 +1128,7 @@ function OptionsPage() {
                             </button>
                           </td>
                         </tr>
-                      ))
-                       )}
+                      ))}
                     </tbody>
                   </table>
                 </div>

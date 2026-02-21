@@ -58,13 +58,6 @@ export function ModeSelector({
             handleModeSelect(1)
           }
           break
-        case '3':
-          // Command+数字键快速切换模式
-          if (e.metaKey || e.ctrlKey) {
-            e.preventDefault()
-            handleModeSelect(2)
-          }
-          break
 
         case 'Enter':
           e.preventDefault()
@@ -108,7 +101,7 @@ export function ModeSelector({
             </div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-            使用数字键 1-3 快速切换模式
+            使用数字键 1-2 快速切换模式
           </p>
         </div>
 

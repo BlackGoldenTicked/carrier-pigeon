@@ -3,8 +3,7 @@
  */
 export enum TabMode {
   MINIMAL = 'minimal',
-  NORMAL = 'normal',
-  PRO = 'pro'
+  NORMAL = 'normal'
 }
 
 /**
@@ -34,12 +33,6 @@ export interface AIModel {
   type: AIModelType
   url: string
   selectedColor: string
-  provider?: string
-  apiKey?: string
-  baseUrl?: string
-  model?: string
-  maxTokens?: number
-  temperature?: number
   isActive?: boolean
 }
 
@@ -51,29 +44,6 @@ export interface AIModelCategory {
   title: string
   description: string
   models: AIModel[]
-}
-
-/**
- * 对话消息接口
- */
-export interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  timestamp: Date
-  modelId?: string
-}
-
-/**
- * 对话会话接口
- */
-export interface ChatSession {
-  id: string
-  title: string
-  messages: ChatMessage[]
-  modelId: string
-  createdAt: Date
-  updatedAt: Date
 }
 
 /**
