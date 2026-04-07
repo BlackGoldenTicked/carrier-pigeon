@@ -311,31 +311,41 @@ function OptionsPage() {
   }
 
   /**
+   * 每行最多显示的链接数
+   */
+  const LINKS_PER_ROW = 5
+  const MAX_LINKS = 20
+
+  /**
+   * 将一维链接数组按每行 LINKS_PER_ROW 个重新分组为二维数组
+   */
+  const redistributeLinks = (flatLinks: LinkConfig[]): LinkConfig[][] => {
+    const rows: LinkConfig[][] = []
+    for (let i = 0; i < flatLinks.length; i += LINKS_PER_ROW) {
+      rows.push(flatLinks.slice(i, i + LINKS_PER_ROW))
+    }
+    return rows.length > 0 ? rows : [[]]
+  }
+
+  /**
    * 添加新链接
    */
   const addLink = () => {
-    // 计算当前链接总数
-    const totalLinks = config.links[0].length + config.links[1].length
-    
-    // 检查是否已达到最大限制
-    if (totalLinks >= 10) {
-      alert('最多只能添加10个快捷链接')
+    const flatLinks = config.links.flat()
+
+    if (flatLinks.length >= MAX_LINKS) {
+      alert(`最多只能添加${MAX_LINKS}个快捷链接`)
       return
     }
-    
+
     const newLink: LinkConfig = {
       id: Date.now(),
       title: '新链接',
       url: 'https://example.com'
     }
-    
-    const newConfig = { ...config }
-    if (newConfig.links[0].length < 5) {
-      newConfig.links[0].push(newLink)
-    } else if (newConfig.links[1].length < 5) {
-      newConfig.links[1].push(newLink)
-    }
-    
+
+    flatLinks.push(newLink)
+    const newConfig = { ...config, links: redistributeLinks(flatLinks) }
     saveConfig(newConfig)
   }
 
@@ -363,10 +373,8 @@ function OptionsPage() {
    * 删除链接
    */
   const deleteLink = (linkId: number) => {
-    const newConfig = { ...config }
-    for (let i = 0; i < newConfig.links.length; i++) {
-      newConfig.links[i] = newConfig.links[i].filter(l => l.id !== linkId)
-    }
+    const flatLinks = config.links.flat().filter(l => l.id !== linkId)
+    const newConfig = { ...config, links: redistributeLinks(flatLinks) }
     saveConfig(newConfig)
   }
 
@@ -810,7 +818,7 @@ function OptionsPage() {
                 
                 <div className="mb-6">
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                    点击单元格直接编辑，失去焦点自动保存。最多支持两行各5个链接。
+                    点击单元格直接编辑，失去焦点自动保存。每行最多5个链接，最多支持{MAX_LINKS}个。
                   </p>
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3">
                     <p className="text-sm text-yellow-800 dark:text-yellow-200">
@@ -824,7 +832,7 @@ function OptionsPage() {
                   {config.links.map((row, rowIndex) => (
                     <div key={rowIndex}>
                       <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-4">
-                        第 {rowIndex + 1} 行 ({row.length}/5)
+                        第 {rowIndex + 1} 行 ({row.length}/{LINKS_PER_ROW})
                       </h3>
                       <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

@@ -15,24 +15,10 @@ import { PerformanceOptimizer } from './utils/performanceOptimizer'
  * 初始化系统主题检测
  */
 function initTheme() {
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
   const updateTheme = () => {
-    // 检测系统主题偏好
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const isDarkSystem = mediaQuery.matches
-    
-    // 检测当前时间（作为备用方案）
-    const hour = new Date().getHours()
-    const isDarkTime = hour < 7 || hour > 19
-    
-    // 决定最终主题（优先级：系统偏好 > 时间 > 默认亮色）
-    let finalDark = isDarkSystem
-    
-    // 如果系统检测失败，使用时间作为备用
-    if (!isDarkSystem && isDarkTime) {
-      finalDark = true
-    }
-    
-    if (finalDark) {
+    if (mediaQuery.matches) {
       document.documentElement.classList.add('dark')
       document.documentElement.style.colorScheme = 'dark'
     } else {
@@ -40,15 +26,9 @@ function initTheme() {
       document.documentElement.style.colorScheme = 'light'
     }
   }
-  
+
   updateTheme()
-  
-  // 监听系统主题变化
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
   mediaQuery.addEventListener('change', updateTheme)
-  
-  // 每分钟检查一次（用于时间备用方案）
-  setInterval(updateTheme, 60000)
 }
 
 // 初始化主题
@@ -146,21 +126,9 @@ function NormalMode() {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        // 检查localStorage中是否有更新的quickLinks数据
-        let quickLinksData = defaultQuickLinks
-        const localQuickLinks = localStorage.getItem('mytab-quicklinks')
-        if (localQuickLinks) {
-          try {
-            quickLinksData = JSON.parse(localQuickLinks)
-            console.log('📋 从localStorage加载quickLinks数据')
-          } catch (error) {
-            console.error('解析localStorage中的quickLinks数据失败:', error)
-          }
-        }
-        
         // 准备JSON默认配置
         const jsonDefaultConfig: ConfigData = {
-          links: quickLinksData, // 使用localStorage中的数据或默认数据
+          links: defaultQuickLinks,
           basicModels: defaultAIModelCategories.flatMap(category => 
             category.models.map(model => ({
               id: model.id,
@@ -229,37 +197,16 @@ function NormalMode() {
 
     loadConfig()
 
-    // 监听localStorage变化，实时更新quickLinks
-    const handleLocalStorageChange = (e: StorageEvent) => {
-      if (e.key === 'mytab-quicklinks' && e.newValue) {
-        try {
-          const newQuickLinks = JSON.parse(e.newValue)
-          setConfig(prevConfig => ({
-            ...prevConfig,
-            links: newQuickLinks
-          }))
-          console.log('📋 检测到quickLinks更新，已同步')
-        } catch (error) {
-          console.error('解析更新的quickLinks数据失败:', error)
-        }
-      }
-    }
-
     // 监听chrome.storage变化，实现实时同步
     const handleChromeStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-      // 只监听sync存储区域的变化
       if (areaName === 'sync' && changes['mytab-config'] && changes['mytab-config'].newValue) {
         setConfig(changes['mytab-config'].newValue)
       }
     }
 
-    // 添加监听器
-    window.addEventListener('storage', handleLocalStorageChange)
     chrome.storage.onChanged.addListener(handleChromeStorageChange)
 
-    // 清理监听器
     return () => {
-      window.removeEventListener('storage', handleLocalStorageChange)
       chrome.storage.onChanged.removeListener(handleChromeStorageChange)
     }
   }, [])
@@ -293,7 +240,7 @@ function NormalMode() {
    * 打开多个链接
    */
   const openMultipleLinks = (linkIds: number[]) => {
-    const allLinks = [...config.links[0], ...config.links[1]]
+    const allLinks = config.links.flat()
     linkIds.forEach((id: number) => {
       const link = allLinks.find(l => l.id === id)
       if (link) {
@@ -361,10 +308,6 @@ function NormalMode() {
       return
     }
 
-    console.log('🔍 [DEBUG] handleSend - 输入的文本:', inputText)
-    console.log('🔍 [DEBUG] handleSend - 文本长度:', inputText.length)
-    console.log('🔍 [DEBUG] handleSend - 选中的模型:', selectedModelIds)
-
     // 获取选中模型的详细信息
     const selectedModelDetails = config.basicModels.filter(model => 
       selectedModelIds.includes(model.id) && model.enabled
@@ -378,8 +321,7 @@ function NormalMode() {
     try {
       // 复制文本到剪贴板
       await navigator.clipboard.writeText(inputText)
-      console.log('🔍 [DEBUG] handleSend - 已复制到剪贴板的文本:', inputText)
-      
+
       // 获取性能优化器实例
       const optimizer = PerformanceOptimizer.getInstance()
       
@@ -418,7 +360,6 @@ function NormalMode() {
       setInputText('')
       // 保留模型选择，方便用户重复使用
       
-      console.log(`${currentMode === 'energy_saving' ? '节能模式' : '高效模式'}：已为 ${selectedModelDetails.length} 个AI模型打开页面并自动填充发送`)
     } catch (error) {
       console.error('自动化流程执行失败:', error)
       alert('操作失败，请检查浏览器权限设置')
@@ -431,11 +372,6 @@ function NormalMode() {
    */
   const openModelPage = async (model: BasicModelConfig, text?: string) => {
     try {
-      console.log(`🔍 [DEBUG] openModelPage - 正在打开 ${model.name} 页面:`, model.url)
-      console.log(`🔍 [DEBUG] openModelPage - 接收到的文本参数:`, text)
-      console.log(`🔍 [DEBUG] openModelPage - 文本是否存在:`, !!text)
-      console.log(`🔍 [DEBUG] openModelPage - 文本是否非空:`, text && text.trim())
-      
       // 如果有文本内容，针对不同模型进行特殊处理
        if (text && text.trim()) {
          // 支持自动填充的模型列表
@@ -471,20 +407,16 @@ function NormalMode() {
          if (modelConfig) {
            // 支持的模型使用background script打开标签页并发送消息
            try {
-             const messageToSend = {
-               action: 'openTabAndSendMessage',
-               url: model.url,
-               message: {
-                 action: modelConfig.action,
-                 text: text
-               }
-             }
-             console.log(`🔍 [DEBUG] openModelPage - 准备发送消息到background:`, messageToSend)
-             
-             const response = await new Promise((resolve) => {
-               chrome.runtime.sendMessage(messageToSend, resolve)
+             await new Promise((resolve) => {
+               chrome.runtime.sendMessage({
+                 action: 'openTabAndSendMessage',
+                 url: model.url,
+                 message: {
+                   action: modelConfig.action,
+                   text: text
+                 }
+               }, resolve)
              })
-             console.log(`🔍 [DEBUG] openModelPage - ${model.name}自动填充和发送响应:`, response)
            } catch (error) {
              console.error(`${model.name}自动填充和发送失败:`, error)
              // 降级处理：直接打开页面并复制文本
@@ -495,12 +427,10 @@ function NormalMode() {
            // 不支持的模型先打开页面，然后复制文本到剪贴板
            window.open(model.url, '_blank')
            await navigator.clipboard.writeText(text)
-           console.log(`已复制文本到剪贴板，请在 ${model.name} 页面手动粘贴`)
          }
       } else {
         // 没有文本内容，直接打开页面
         window.open(model.url, '_blank')
-        console.log(`已打开 ${model.name} 页面`)
       }
     } catch (error) {
       console.error(`打开 ${model.name} 页面失败:`, error)
@@ -964,13 +894,7 @@ function NewTabPage() {
   // 字体设置Hook
   const { fontSettings, getEnabledFont } = useFontSettings()
 
-  // 立即初始化字体设置，避免闪烁
-  useEffect(() => {
-    const enabledFont = getEnabledFont()
-    if (enabledFont && fontSettings.applyToAllPages) {
-      fontInjector.initialize(enabledFont, fontSettings)
-    }
-  }, []) // 只在组件挂载时执行一次
+  // 字体初始化已合并到下方的字体应用 useEffect 中
 
   /**
    * 管理body类，确保极简模式样式立即生效
@@ -1033,15 +957,14 @@ function NewTabPage() {
 
   /**
    * 应用字体设置
-   * 当字体配置变化时自动应用到页面
+   * newtab 页面始终应用选中的字体，不受 applyToAllPages 控制
+   * applyToAllPages 仅控制是否通过 content script 注入到其他网页
    */
   useEffect(() => {
     try {
       const enabledFont = getEnabledFont()
-      if (enabledFont && fontSettings.applyToAllPages) {
-        // 使用同步方法立即应用，避免闪烁
+      if (enabledFont) {
         fontInjector.applySyncFontSettings(enabledFont, fontSettings)
-        console.log(`字体已同步应用: ${enabledFont.displayName}`)
       }
     } catch (error) {
       console.error('应用字体设置失败:', error)

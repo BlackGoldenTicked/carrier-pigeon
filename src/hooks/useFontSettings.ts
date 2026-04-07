@@ -1,10 +1,32 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Storage } from '@plasmohq/storage'
 import { FontConfig, FontSettings, FontCategory } from '../types'
 import fontConfigData from '../config/fontConfig.json'
 
-const storage = new Storage()
-const FONT_SETTINGS_KEY = 'fontSettings'
+const FONT_SETTINGS_KEY = 'mytab-font-settings'
+
+/**
+ * 统一存储工具：优先 chrome.storage.sync，降级到 localStorage
+ */
+const storage = {
+  async get(key: string): Promise<string | null> {
+    try {
+      if (chrome?.storage?.sync) {
+        const result = await chrome.storage.sync.get([key])
+        return result[key] ?? null
+      }
+    } catch {}
+    return localStorage.getItem(key)
+  },
+  async set(key: string, value: string): Promise<void> {
+    try {
+      if (chrome?.storage?.sync) {
+        await chrome.storage.sync.set({ [key]: value })
+        return
+      }
+    } catch {}
+    localStorage.setItem(key, value)
+  }
+}
 
 /**
  * 默认字体设置
@@ -32,8 +54,8 @@ export const useFontSettings = () => {
   const loadFontSettings = useCallback(async () => {
     try {
       setLoading(true)
-      const stored = await storage.get(FONT_SETTINGS_KEY)
-      const settings = stored ? JSON.parse(stored) : defaultFontSettings
+      const raw = await storage.get(FONT_SETTINGS_KEY)
+      const settings = raw ? JSON.parse(raw) : defaultFontSettings
       
       // 合并默认字体和自定义字体
       const defaultFonts = fontConfigData.defaultFonts as FontConfig[]
@@ -53,10 +75,10 @@ export const useFontSettings = () => {
   /**
    * 保存字体设置到存储
    */
-  const saveFontSettings = useCallback(async (settings: FontSettings) => {
+  const saveFontSettings = useCallback(async (newSettings: FontSettings) => {
     try {
-      await storage.set(FONT_SETTINGS_KEY, JSON.stringify(settings))
-      setFontSettings(settings)
+      await storage.set(FONT_SETTINGS_KEY, JSON.stringify(newSettings))
+      setFontSettings(newSettings)
     } catch (error) {
       console.error('Failed to save font settings:', error)
     }

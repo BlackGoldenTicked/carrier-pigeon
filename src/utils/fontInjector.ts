@@ -10,7 +10,6 @@ export class FontInjector {
   private currentStyleElement: HTMLStyleElement | null = null
   private fontLinkElements: Map<string, HTMLLinkElement> = new Map()
   private fontLoadPromises: Map<string, Promise<void>> = new Map()
-  private isInitialized: boolean = false
 
   private constructor() {}
 
@@ -35,7 +34,6 @@ export class FontInjector {
     // 如果没有CSS URL，直接使用系统字体
     if (!font.cssUrl) {
       this.loadedFonts.add(font.id)
-      console.log(`Using system font: ${font.displayName}`)
       return
     }
 
@@ -56,7 +54,6 @@ export class FontInjector {
         clearTimeout(timeout)
         this.loadedFonts.add(font.id)
         this.fontLinkElements.set(font.id, link)
-        console.log(`Font loaded: ${font.displayName}`)
         resolve()
       }
       
@@ -85,7 +82,6 @@ export class FontInjector {
       linkElement.parentNode.removeChild(linkElement)
       this.fontLinkElements.delete(fontId)
       this.loadedFonts.delete(fontId)
-      console.log(`Font unloaded: ${fontId}`)
     }
   }
 
@@ -109,15 +105,11 @@ export class FontInjector {
       // 立即插入到head的最前面，确保优先级
       document.head.insertBefore(style, document.head.firstChild)
       this.currentStyleElement = style
-      
+
       // 如果字体需要外部CSS，异步加载但不等待
       if (font.cssUrl && !this.loadedFonts.has(font.id)) {
-        this.loadFont(font).catch(error => {
-          console.warn(`Failed to load font ${font.displayName}:`, error)
-        })
+        this.loadFont(font).catch(() => {})
       }
-      
-      console.log(`Sync applied font: ${font.displayName}`)
     } catch (error) {
       console.error('Failed to sync apply font settings:', error)
     }
@@ -145,8 +137,6 @@ export class FontInjector {
       
       document.head.appendChild(style)
       this.currentStyleElement = style
-      
-      console.log(`Applied font: ${font.displayName}`)
     } catch (error) {
       console.error('Failed to apply font settings:', error)
     }
@@ -158,58 +148,31 @@ export class FontInjector {
   private generateFontCSS(font: FontConfig, settings: FontSettings): string {
     const { fontFamily, fontWeight = '400' } = font
     const { fontSize, lineHeight } = settings
-    
+    const fallback = `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`
+    const fontStack = `${fontFamily}, ${fallback}`
+
     return `
-      /* 全局字体设置 */
-      * {
-        font-family: ${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+      :root {
+        --custom-font: ${fontStack};
+        --custom-font-weight: ${fontWeight};
+        --custom-font-size: ${fontSize}px;
+        --custom-line-height: ${lineHeight};
       }
-      
-      /* 基础元素字体设置 */
-      body, html {
-        font-family: ${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-        font-size: ${fontSize}px !important;
-        line-height: ${lineHeight} !important;
-        font-weight: ${fontWeight} !important;
-      }
-      
-      /* 标题元素 */
-      h1, h2, h3, h4, h5, h6 {
-        font-family: ${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-        font-weight: ${fontWeight} !important;
-      }
-      
-      /* 段落和文本元素 */
-      p, span, div, a, li, td, th, label, input, textarea, button {
-        font-family: ${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-        font-weight: ${fontWeight} !important;
-      }
-      
-      /* 特定模式下的字体优化 */
-      .normal-mode * {
-        font-family: ${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-      }
-      
-      .minimal-mode * {
-        font-family: ${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-      }
-      
-      /* 确保动画和特效组件的字体一致性 */
-      .moving-border *, .animated-border *, .mode-selector * {
-        font-family: ${fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-        font-weight: ${fontWeight} !important;
-      }
-      
-      /* 保持等宽字体的元素 */
-      code, pre, kbd, samp, tt, var {
-        font-family: ${font.category === 'monospace' ? fontFamily : "'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace"} !important;
-      }
-      
-      /* 确保在不同背景下的字体渲染质量 */
-      * {
+
+      *, *::before, *::after {
+        font-family: var(--custom-font) !important;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        text-rendering: optimizeLegibility;
+      }
+
+      html, body {
+        font-size: var(--custom-font-size) !important;
+        line-height: var(--custom-line-height) !important;
+        font-weight: var(--custom-font-weight) !important;
+      }
+
+      code, pre, kbd, samp, tt, var {
+        font-family: ${font.category === 'monospace' ? fontFamily : "'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace"} !important;
       }
     `
   }
@@ -224,28 +187,6 @@ export class FontInjector {
     }
   }
 
-
-
-  /**
-   * 初始化字体注入器
-   * @param enabledFont 当前启用的字体
-   * @param settings 字体设置
-   */
-  initialize(enabledFont?: FontConfig, settings?: FontSettings): void {
-    if (this.isInitialized) return
-    
-    try {
-      // 如果有启用的字体，立即同步应用
-      if (enabledFont && settings) {
-        this.applySyncFontSettings(enabledFont, settings)
-      }
-      
-      this.isInitialized = true
-      console.log('FontInjector initialized')
-    } catch (error) {
-      console.error('Failed to initialize FontInjector:', error)
-    }
-  }
 
   /**
    * 预加载多个字体

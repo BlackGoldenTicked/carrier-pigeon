@@ -97,10 +97,14 @@ export default function ConfigManager({
    */
   const saveConfig = (newConfig: ConfigData) => {
     setConfig(newConfig)
-    // 保存完整配置到localStorage
-    localStorage.setItem('mytab-config', JSON.stringify(newConfig))
-    // 单独保存quickLinks数据，供其他组件使用
-    localStorage.setItem('mytab-quicklinks', JSON.stringify(newConfig.links))
+    // 优先使用 chrome.storage.sync，降级到 localStorage
+    if (chrome?.storage?.sync) {
+      chrome.storage.sync.set({ 'mytab-config': newConfig }).catch(() => {
+        localStorage.setItem('mytab-config', JSON.stringify(newConfig))
+      })
+    } else {
+      localStorage.setItem('mytab-config', JSON.stringify(newConfig))
+    }
   }
 
   /**
@@ -116,31 +120,30 @@ export default function ConfigManager({
   }
 
   /**
+   * 将一维链接数组按每行5个重新分组为二维数组
+   */
+  const redistributeLinks = (flatLinks: LinkConfig[]): LinkConfig[][] => {
+    const rows: LinkConfig[][] = []
+    for (let i = 0; i < flatLinks.length; i += 5) {
+      rows.push(flatLinks.slice(i, i + 5))
+    }
+    return rows.length > 0 ? rows : [[]]
+  }
+
+  /**
    * 保存链接
    */
   const saveLink = (link: LinkConfig) => {
-    const newConfig = { ...config }
-    let found = false
-    
-    // 查找并更新现有链接
-    for (let i = 0; i < newConfig.links.length; i++) {
-      const rowIndex = newConfig.links[i].findIndex(l => l.id === link.id)
-      if (rowIndex !== -1) {
-        newConfig.links[i][rowIndex] = link
-        found = true
-        break
-      }
+    const flatLinks = config.links.flat()
+    const existingIndex = flatLinks.findIndex(l => l.id === link.id)
+
+    if (existingIndex !== -1) {
+      flatLinks[existingIndex] = link
+    } else {
+      flatLinks.push(link)
     }
-    
-    // 如果是新链接，添加到第一行
-    if (!found) {
-      if (newConfig.links[0].length < 5) {
-        newConfig.links[0].push(link)
-      } else if (newConfig.links[1].length < 5) {
-        newConfig.links[1].push(link)
-      }
-    }
-    
+
+    const newConfig = { ...config, links: redistributeLinks(flatLinks) }
     saveConfig(newConfig)
     setEditingLink(null)
   }
@@ -149,10 +152,8 @@ export default function ConfigManager({
    * 删除链接
    */
   const deleteLink = (linkId: number) => {
-    const newConfig = { ...config }
-    for (let i = 0; i < newConfig.links.length; i++) {
-      newConfig.links[i] = newConfig.links[i].filter(l => l.id !== linkId)
-    }
+    const flatLinks = config.links.flat().filter(l => l.id !== linkId)
+    const newConfig = { ...config, links: redistributeLinks(flatLinks) }
     saveConfig(newConfig)
   }
 
