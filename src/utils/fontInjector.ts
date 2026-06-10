@@ -1,4 +1,5 @@
 import { FontConfig, FontSettings } from '../types'
+import { localFontLoaders } from './localFonts'
 
 /**
  * 字体CSS注入器类
@@ -10,8 +11,39 @@ export class FontInjector {
   private currentStyleElement: HTMLStyleElement | null = null
   private fontLinkElements: Map<string, HTMLLinkElement> = new Map()
   private fontLoadPromises: Map<string, Promise<void>> = new Map()
+  private injectedLocalFonts: Set<string> = new Set()
 
   private constructor() {}
+
+  /**
+   * 注入本地内置字体的 @font-face 样式（按需动态加载）
+   * 用于远程 CDN 不可用 / 需要 Referer 的字体，避免网络请求与报错
+   */
+  private async ensureLocalFontFace(font: FontConfig): Promise<void> {
+    const loader = localFontLoaders[font.id]
+    if (!loader) {
+      return
+    }
+
+    const styleId = `local-font-${font.id}`
+    if (this.injectedLocalFonts.has(font.id) || document.getElementById(styleId)) {
+      this.injectedLocalFonts.add(font.id)
+      this.loadedFonts.add(font.id)
+      return
+    }
+
+    try {
+      const css = await loader()
+      const style = document.createElement('style')
+      style.id = styleId
+      style.textContent = css
+      document.head.appendChild(style)
+      this.injectedLocalFonts.add(font.id)
+      this.loadedFonts.add(font.id)
+    } catch (error) {
+      console.warn(`Failed to load local font: ${font.displayName}`, error)
+    }
+  }
 
   /**
    * 获取单例实例
@@ -106,6 +138,9 @@ export class FontInjector {
       document.head.insertBefore(style, document.head.firstChild)
       this.currentStyleElement = style
 
+      // 本地内置字体：按需注入 @font-face（不阻塞渲染）
+      this.ensureLocalFontFace(font).catch(() => {})
+
       // 如果字体需要外部CSS，异步加载但不等待
       if (font.cssUrl && !this.loadedFonts.has(font.id)) {
         this.loadFont(font).catch(() => {})
@@ -120,6 +155,9 @@ export class FontInjector {
    */
   async applyFontSettings(font: FontConfig, settings: FontSettings): Promise<void> {
     try {
+      // 本地内置字体：按需注入 @font-face
+      await this.ensureLocalFontFace(font)
+
       // 加载字体（如果需要）
       if (font.cssUrl) {
         await this.loadFont(font)
@@ -234,9 +272,18 @@ export class FontInjector {
     this.fontLinkElements.forEach((link, fontId) => {
       this.unloadFont(fontId)
     })
-    
+
+    // 移除本地内置字体样式
+    this.injectedLocalFonts.forEach((fontId) => {
+      const style = document.getElementById(`local-font-${fontId}`)
+      if (style && style.parentNode) {
+        style.parentNode.removeChild(style)
+      }
+    })
+
     this.loadedFonts.clear()
     this.fontLinkElements.clear()
+    this.injectedLocalFonts.clear()
   }
 
   /**

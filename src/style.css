@@ -166,3 +166,94 @@
 .animate-gradient-pulse {
   animation: gradientPulse 1.5s ease-in-out infinite;
 }
+
+/* ============================================================
+   电影感 Hero（一般模式）—— Aethera 风格
+   ============================================================ */
+
+/* 入场动画：淡入 + 上浮 */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-rise {
+  animation: fade-rise 0.8s ease-out both;
+}
+
+.animate-fade-rise-delay {
+  animation: fade-rise 0.8s ease-out 0.2s both;
+}
+
+.animate-fade-rise-delay-2 {
+  animation: fade-rise 0.8s ease-out 0.4s both;
+}
+
+/*
+  Hero 字体：正文 Inter，标题 Instrument Serif。
+  用 !important + 更高特异性覆盖全局字体注入器（* { font-family: ... !important }）。
+*/
+.hero-root,
+.hero-root *,
+.app-shell,
+.app-shell * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif !important;
+}
+
+.hero-root .font-display,
+.hero-root .font-display *,
+.app-shell .font-display,
+.app-shell .font-display * {
+  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif !important;
+}
+
+/* 背景图片「全息投影」特效动画：滚动扫描光束 + 随机闪烁 */
+@keyframes holo-scan {
+  0% {
+    top: -16%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+@keyframes holo-flicker {
+  0%,
+  91%,
+  95%,
+  99%,
+  100% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 0.75;
+  }
+  93% {
+    opacity: 0.92;
+  }
+  97% {
+    opacity: 0.85;
+  }
+}
+
+.holo-scan-beam {
+  animation: holo-scan 5s linear infinite;
+}
+
+.holo-flicker {
+  animation: holo-flicker 4s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holo-scan-beam,
+  .holo-flicker {
+    animation: none;
+  }
+}

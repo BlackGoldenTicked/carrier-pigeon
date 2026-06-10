@@ -13,18 +13,11 @@
           "selectedColor": "#10a37f"
         },
         {
-          "id": "claude-3",
-          "name": "Claude",
+          "id": "kimi",
+          "name": "Kimi",
           "type": "language",
-          "url": "https://claude.ai",
-          "selectedColor": "#ff6b35"
-        },
-        {
-          "id": "gemini",
-          "name": "Gemini",
-          "type": "language",
-          "url": "https://gemini.google.com",
-          "selectedColor": "#4285f4"
+          "url": "https://kimi.moonshot.cn",
+          "selectedColor": "#ff9800"
         },
         {
           "id": "deepseek",
@@ -34,46 +27,11 @@
           "selectedColor": "#1a1a1a"
         },
         {
-          "id": "kimi",
-          "name": "Kimi",
+          "id": "claude-3",
+          "name": "Claude",
           "type": "language",
-          "url": "https://kimi.moonshot.cn",
-          "selectedColor": "#ff9800"
-        },
-        {
-          "id": "tongyi",
-          "name": "通义千问",
-          "type": "language",
-          "url": "https://www.tongyi.com/",
-          "selectedColor": "#ff6600"
-        },
-        {
-          "id": "yuanbao",
-          "name": "元宝",
-          "type": "language",
-          "url": "https://yuanbao.tencent.com",
-          "selectedColor": "#07c160"
-        },
-        {
-          "id": "doubao",
-          "name": "豆包",
-          "type": "language",
-          "url": "https://doubao.com",
-          "selectedColor": "#2932e1"
-        }
-      ]
-    },
-    {
-      "type": "multimedia",
-      "title": "音视频模型",
-      "description": "专注于音频、视频生成和处理的AI模型",
-      "models": [
-        {
-          "id": "suno",
-          "name": "Suno AI",
-          "type": "multimedia",
-          "url": "https://suno.com",
-          "selectedColor": "#ff4081"
+          "url": "https://claude.ai",
+          "selectedColor": "#ff6b35"
         }
       ]
     }

@@ -3,38 +3,13 @@
     {
       "id": "system-default",
       "name": "system-default",
-      "displayName": "系统默认字体",
+      "displayName": "系统默认",
       "description": "使用系统默认字体，兼容性最佳",
       "cssUrl": "",
       "fontFamily": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif",
       "fontWeight": "400",
-      "previewText": "系统默认字体，兼容性最佳",
       "isEnabled": true,
       "category": "system"
-    },
-    {
-      "id": "noto-sans-sc",
-      "name": "noto-sans-sc",
-      "displayName": "思源黑体",
-      "description": "Google开源的中文字体，清晰易读",
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap",
-      "fontFamily": "'Noto Sans SC', sans-serif",
-      "fontWeight": "400",
-      "previewText": "思源黑体，清晰易读",
-      "isEnabled": false,
-      "category": "sans-serif"
-    },
-    {
-      "id": "noto-serif-sc",
-      "name": "noto-serif-sc",
-      "displayName": "思源宋体",
-      "description": "Google开源的中文宋体，适合正文阅读",
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&display=swap",
-      "fontFamily": "'Noto Serif SC', serif",
-      "fontWeight": "400",
-      "previewText": "思源宋体，适合正文阅读",
-      "isEnabled": false,
-      "category": "serif"
     },
     {
       "id": "lxgw-wenkai-system",
@@ -44,7 +19,6 @@
       "cssUrl": "",
       "fontFamily": "'LXGW WenKai', 'LXGW WenKai Light', cursive, sans-serif",
       "fontWeight": "400",
-      "previewText": "霞鹜文楷，优雅手写风格",
       "isEnabled": false,
       "category": "handwriting"
     },
@@ -56,173 +30,30 @@
       "cssUrl": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap",
       "fontFamily": "'JetBrains Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace",
       "fontWeight": "400",
-      "previewText": "JetBrains Mono，开发者字体",
       "isEnabled": false,
       "category": "monospace"
     },
     {
-      "id": "inter",
-      "name": "inter",
-      "displayName": "Inter",
-      "description": "现代UI设计字体，清晰易读",
-      "cssUrl": "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap",
-      "fontFamily": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "id": "noto-serif-sc",
+      "name": "noto-serif-sc",
+      "displayName": "思源宋体",
+      "description": "Google开源的中文宋体，适合正文阅读",
+      "cssUrl": "https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700&display=swap",
+      "fontFamily": "'Noto Serif SC', serif",
       "fontWeight": "400",
-      "previewText": "Inter，现代UI字体",
-      "isEnabled": false,
-      "category": "sans-serif"
-    },
-    {
-      "id": "source-han-sans",
-      "name": "source-han-sans",
-      "displayName": "思源黑体 (系统)",
-      "description": "Adobe开源的中文字体，系统版本",
-      "cssUrl": "",
-      "fontFamily": "'Source Han Sans SC', 'Source Han Sans CN', 'Noto Sans CJK SC', sans-serif",
-      "fontWeight": "400",
-      "previewText": "思源黑体，Adobe开源字体",
-      "isEnabled": false,
-      "category": "sans-serif"
-    },
-    {
-      "id": "source-han-serif-cn",
-      "name": "source-han-serif-cn",
-      "displayName": "思源宋体 (中文网字计划)",
-      "description": "Adobe开源的中文宋体，来自中文网字计划",
-      "cssUrl": "https://chinese-fonts-cdn.deno.dev/packages/syst/dist/SourceHanSerifCN/result.css",
-      "fontFamily": "'Source Han Serif CN VF', serif",
-      "fontWeight": "400",
-      "previewText": "思源宋体，优雅的中文宋体",
       "isEnabled": false,
       "category": "serif"
-    },
-    {
-      "id": "douyin-sans-bold",
-      "name": "douyin-sans-bold",
-      "displayName": "抖音美好体 (粗体)",
-      "description": "抖音官方字体，现代时尚的无衬线字体",
-      "cssUrl": "https://chinese-fonts-cdn.deno.dev/packages/dymh/dist/DouyinSansBold/result.css",
-      "fontFamily": "'Douyin Sans', sans-serif",
-      "fontWeight": "700",
-      "previewText": "抖音美好体，现代时尚",
-      "isEnabled": false,
-      "category": "sans-serif"
-    },
-    {
-      "id": "huiwen-mincho",
-      "name": "huiwen-mincho",
-      "displayName": "汇文明朝体",
-      "description": "优雅的中文明朝体，适合正式文档",
-      "cssUrl": "https://chinese-fonts-cdn.deno.dev/packages/hwmct/dist/汇文明朝体/result.css",
-      "fontFamily": "'Huiwen-mincho', serif",
-      "fontWeight": "400",
-      "previewText": "汇文明朝体，优雅正式",
-      "isEnabled": false,
-      "category": "serif"
-    },
-    {
-      "id": "maple-mono-cn-semibold-italic",
-      "name": "maple-mono-cn-semibold-italic",
-      "displayName": "Maple Mono CN (半粗斜体)",
-      "description": "中文等宽字体，半粗斜体版本，适合代码编辑",
-      "cssUrl": "https://chinese-fonts-cdn.deno.dev/packages/maple-mono-cn/dist/MapleMono-CN-SemiBoldItalic/result.css",
-      "fontFamily": "'Maple Mono CN SemiBold', monospace",
-      "fontWeight": "600",
-      "previewText": "Maple Mono CN，中文等宽字体",
-      "isEnabled": false,
-      "category": "monospace"
-    },
-    {
-      "id": "maple-mono-cn-medium",
-      "name": "maple-mono-cn-medium",
-      "displayName": "Maple Mono CN (中等)",
-      "description": "中文等宽字体，中等粗细，适合代码编辑",
-      "cssUrl": "https://chinese-fonts-cdn.deno.dev/packages/maple-mono-cn/dist/MapleMono-CN-Medium/result.css",
-      "fontFamily": "'Maple Mono CN Medium', monospace",
-      "fontWeight": "400",
-      "previewText": "Maple Mono CN，中文等宽字体",
-      "isEnabled": false,
-      "category": "monospace"
-    },
-    {
-      "id": "maple-mono-cn-extrabold",
-      "name": "maple-mono-cn-extrabold",
-      "displayName": "Maple Mono CN (特粗)",
-      "description": "中文等宽字体，特粗版本，适合代码编辑",
-      "cssUrl": "https://chinese-fonts-cdn.deno.dev/packages/maple-mono-cn/dist/MapleMono-CN-ExtraBold/result.css",
-      "fontFamily": "'Maple Mono CN ExtraBold', monospace",
-      "fontWeight": "400",
-      "previewText": "Maple Mono CN，中文等宽字体",
-      "isEnabled": false,
-      "category": "monospace"
     },
     {
       "id": "muzai-pixel",
       "name": "muzai-pixel",
       "displayName": "木仔像素体",
-      "description": "像素风格的中文字体，适合游戏和复古设计",
-      "cssUrl": "https://chinese-fonts-cdn.deno.dev/packages/mzxst/dist/MZPXorig/result.css",
+      "description": "像素风格的中文字体，本地内置离线使用",
+      "cssUrl": "",
       "fontFamily": "'MuzaiPixel', monospace",
       "fontWeight": "400",
-      "previewText": "木仔像素体，复古像素风格",
       "isEnabled": false,
       "category": "display"
-    },
-    {
-      "id": "boutique-bitmap-9x9",
-      "name": "boutique-bitmap-9x9",
-      "displayName": "精品点阵体 9x9",
-      "description": "精致的点阵字体，适合像素艺术和复古设计",
-      "cssUrl": "https://chinese-fonts-cdn.deno.dev/packages/jpdzt/dist/BoutiqueBitmap9x9_1_6/result.css",
-      "fontFamily": "'BoutiqueBitmap9x9 1.6 R', monospace",
-      "fontWeight": "400",
-      "previewText": "精品点阵体，像素艺术风格",
-      "isEnabled": false,
-      "category": "display"
-    },
-    {
-      "id": "cubic-11",
-      "name": "cubic-11",
-      "displayName": "Cubic 11",
-      "description": "立体风格的像素字体，适合游戏和创意设计",
-      "cssUrl": "https://chinese-fonts-cdn.deno.dev/packages/cubic/dist/Cubic/result.css",
-      "fontFamily": "'Cubic 11', monospace",
-      "fontWeight": "400",
-      "previewText": "Cubic 11，立体像素风格",
-      "isEnabled": false,
-      "category": "display"
-    }
-  ],
-  "fontCategories": [
-    {
-      "id": "system",
-      "name": "系统字体",
-      "description": "使用系统内置字体，兼容性最佳"
-    },
-    {
-      "id": "sans-serif",
-      "name": "无衬线",
-      "description": "现代简洁的无衬线字体"
-    },
-    {
-      "id": "serif",
-      "name": "衬线字体",
-      "description": "传统的衬线字体"
-    },
-    {
-      "id": "handwriting",
-      "name": "手写风格",
-      "description": "具有手写特色的字体"
-    },
-    {
-      "id": "monospace",
-      "name": "等宽字体",
-      "description": "适合代码和技术文档的等宽字体"
-    },
-    {
-      "id": "display",
-      "name": "展示字体",
-      "description": "适合标题和展示的字体"
     }
   ]
 }

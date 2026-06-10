@@ -1,14 +1,90 @@
 import React, { useState, useEffect } from 'react'
 import './style.css'
 
-import { Button as MovingBorderButton, AdvancedMovingBorder } from './components/ui/moving-border'
-import { AnimatedBorder, AnimatedBorderContainer } from './components/ui/animated-border'
 import { ModeSelector } from './components/ui/mode-selector'
-import { getQuickLinks, getAIModels, getModeConfig, getTabMode, getPerformanceConfig } from './utils/configLoader'
-import { AIModelCategory, PerformanceMode } from './types'
+import { VideoBackground } from './components/ui/VideoBackground'
+import { ImageBackground } from './components/ui/ImageBackground'
+import { getAIIcon } from './components/icons/ai'
+import { ArrowUpIcon, SettingsIcon, LinkIcon, SunIcon, MoonIcon, VideoIcon, VideoOffIcon, ImageIcon, ImageOffIcon } from './components/icons/ui'
+import { getQuickLinks, getAIModels, getModeConfig, getTabMode } from './utils/configLoader'
 import { useFontSettings } from './hooks/useFontSettings'
 import { fontInjector } from './utils/fontInjector'
-import { PerformanceOptimizer } from './utils/performanceOptimizer'
+import { getRandomQuote } from './config/quotes'
+import { startTitleMarquee } from './utils/titleMarquee'
+import { ensureHeroFonts } from './utils/heroFonts'
+import { getHeroTitleConfig, applyHeroTitleStyle, DEFAULT_HERO_TITLE } from './utils/heroTitle'
+import { getVideoSource, loadLocalVideoURL } from './utils/videoSource'
+import { getImageSource, loadLocalImageURL } from './utils/imageSource'
+import { getImageEffect } from './utils/imageEffect'
+import heroVideoUrl from 'url:./assets/hero.mp4'
+
+/** Hero 背景视频（本地内置 720p 低码率版本，省内存、离线、无需联网） */
+const HERO_VIDEO_URL = heroVideoUrl
+
+/** 打开扩展设置页 */
+function openOptionsPage(): void {
+  if (chrome?.runtime?.openOptionsPage) {
+    chrome.runtime.openOptionsPage()
+  } else {
+    window.open(chrome.runtime.getURL('options.html'), '_blank')
+  }
+}
+
+/**
+ * 背景模式（视频 / 图片 / 无）—— 单一状态来源，三者互斥
+ * - 'video'：内置/在线/本地背景视频（默认，老机器可切到 none 提升性能）
+ * - 'image'：背景图片（需先在设置中配置图片来源）
+ * - 'none' ：纯色背景
+ */
+type BgMode = 'video' | 'image' | 'none'
+
+const BG_MODE_KEY = 'mytab-bg-mode'
+/** 旧版背景视频开关 key（用于一次性迁移） */
+const LEGACY_BG_VIDEO_KEY = 'mytab-bg-video'
+
+function readBgMode(): BgMode {
+  try {
+    const saved = localStorage.getItem(BG_MODE_KEY)
+    if (saved === 'video' || saved === 'image' || saved === 'none') {
+      return saved
+    }
+    // 迁移旧偏好：此前仅有「背景视频开关」，关 → none，其余 → video
+    const legacyVideoOff = localStorage.getItem(LEGACY_BG_VIDEO_KEY) === '0'
+    return legacyVideoOff ? 'none' : 'video'
+  } catch {
+    return 'video'
+  }
+}
+
+function writeBgMode(mode: BgMode): void {
+  try {
+    localStorage.setItem(BG_MODE_KEY, mode)
+  } catch {
+    /* 忽略存储异常 */
+  }
+}
+
+/** 主题偏好（深/浅），未设置时跟随当前 <html> 上的 .dark（由 initTheme 按系统设置） */
+const THEME_KEY = 'mytab-theme'
+
+function readDarkPref(): boolean {
+  try {
+    const saved = localStorage.getItem(THEME_KEY)
+    if (saved === 'dark') return true
+    if (saved === 'light') return false
+  } catch {
+    /* 忽略 */
+  }
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+}
+
+function writeDarkPref(isDark: boolean): void {
+  try {
+    localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light')
+  } catch {
+    /* 忽略存储异常 */
+  }
+}
 
 
 /**
@@ -73,13 +149,21 @@ const allAIModels = defaultAIModelCategories.flatMap(category => category.models
 /**
  * 一般模式组件
  */
-function NormalMode() {
+function NormalMode({
+  bgVideoEnabled = true,
+  bgImageEnabled = true
+}: {
+  bgVideoEnabled?: boolean
+  bgImageEnabled?: boolean
+}) {
   const [selectedLinks, setSelectedLinks] = useState(new Set())
   /**
    * 模型选择集合
-   * 默认选中 Kimi，提升一般模式的开箱即用体验
+   * 默认选中全部模型，发送时一起打开
    */
-  const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set(["kimi"]))
+  const [selectedModels, setSelectedModels] = useState<Set<string>>(
+    new Set(allAIModels.map((model) => model.id))
+  )
   const [inputText, setInputText] = useState('')
   const [isSelecting, setIsSelecting] = useState(false)
   const [selectionStart, setSelectionStart] = useState(null)
@@ -151,23 +235,16 @@ function NormalMode() {
         
         setConfig(mergedConfig)
         /**
-         * 加载配置并同步默认模型选择（优先选中 Kimi）
-         * 若 Kimi 在当前配置中启用，则保持默认选中；否则移除
+         * 加载配置后默认选中全部已启用的模型
          */
-        if (mergedConfig.basicModels.some((m) => m.id === "kimi" && m.enabled)) {
-          setSelectedModels((prev) => {
-            const next = new Set(prev)
-            next.add("kimi")
-            return next
-          })
-        } else {
-          setSelectedModels((prev) => {
-            const next = new Set(prev)
-            next.delete("kimi")
-            return next
-          })
-        }
-        
+        setSelectedModels(
+          new Set(
+            mergedConfig.basicModels
+              .filter((m) => m.enabled)
+              .map((m) => m.id)
+          )
+        )
+
         // 如果配置有变化，同步到storage
         if (!storedConfig || JSON.stringify(storedConfig) !== JSON.stringify(mergedConfig)) {
           await chrome.storage.sync.set({ 'mytab-config': mergedConfig })
@@ -211,6 +288,95 @@ function NormalMode() {
     }
   }, [])
 
+
+  /**
+   * 注入 Hero 字体（Instrument Serif + Inter）
+   */
+  useEffect(() => {
+    ensureHeroFonts()
+  }, [])
+
+  /**
+   * 首页大标题配置（文案 / 字体 / 字号），首屏同步读取避免闪烁
+   */
+  const [heroTitle] = useState(() => getHeroTitleConfig())
+  useEffect(() => {
+    applyHeroTitleStyle(heroTitle)
+  }, [heroTitle])
+
+  /**
+   * 解析背景视频来源（内置 / 在线地址 / 本地上传）
+   */
+  const [videoSrc, setVideoSrc] = useState<string>(HERO_VIDEO_URL)
+  useEffect(() => {
+    let cancelled = false
+    let objectUrl: string | null = null
+
+    const resolve = async () => {
+      const source = getVideoSource()
+      if (source.type === 'url' && source.url) {
+        if (!cancelled) setVideoSrc(source.url)
+      } else if (source.type === 'local') {
+        const local = await loadLocalVideoURL()
+        if (cancelled) {
+          if (local) URL.revokeObjectURL(local)
+          return
+        }
+        if (local) {
+          objectUrl = local
+          setVideoSrc(local)
+        } else {
+          setVideoSrc(HERO_VIDEO_URL)
+        }
+      } else if (!cancelled) {
+        setVideoSrc(HERO_VIDEO_URL)
+      }
+    }
+    void resolve()
+
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [])
+
+  /**
+   * 解析背景图片来源（在线地址 / 本地上传），未配置时为空
+   */
+  const [imageSrc, setImageSrc] = useState<string>('')
+  /** 图片特效配置（打开页面时读取一次，设置页修改后新标签页生效） */
+  const [imageEffect] = useState(() => getImageEffect())
+  useEffect(() => {
+    let cancelled = false
+    let objectUrl: string | null = null
+
+    const resolve = async () => {
+      const source = getImageSource()
+      if (source.type === 'url' && source.url) {
+        if (!cancelled) setImageSrc(source.url)
+      } else if (source.type === 'local') {
+        const local = await loadLocalImageURL()
+        if (cancelled) {
+          if (local) URL.revokeObjectURL(local)
+          return
+        }
+        if (local) {
+          objectUrl = local
+          setImageSrc(local)
+        } else {
+          setImageSrc('')
+        }
+      } else if (!cancelled) {
+        setImageSrc('')
+      }
+    }
+    void resolve()
+
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [])
 
   /**
    * 处理链接点击
@@ -322,14 +488,6 @@ function NormalMode() {
       // 复制文本到剪贴板
       await navigator.clipboard.writeText(inputText)
 
-      // 获取性能优化器实例
-      const optimizer = PerformanceOptimizer.getInstance()
-      
-      // 获取当前性能配置
-      const performanceSettings = optimizer.getSettings()
-      const currentMode = performanceSettings.mode
-      const estimatedTime = optimizer.getEstimatedTime(selectedModelDetails.length)
-      
       // 显示操作提示
       const notification = document.createElement('div')
       notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300'
@@ -338,13 +496,15 @@ function NormalMode() {
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
           </svg>
-          <span>💬 ${currentMode === 'energy_saving' ? '节能模式' : '高效模式'}：正在打开 ${selectedModelDetails.length} 个AI页面，预计耗时 ${estimatedTime}s...</span>
+          <span>💬 正在同时打开 ${selectedModelDetails.length} 个AI页面...</span>
         </div>
       `
       document.body.appendChild(notification)
-      
-      // 使用性能优化器打开模型页面
-      await optimizer.openModelsWithOptimalMode(selectedModelDetails, openModelPage, inputText)
+
+      // 一起打开所有选中的模型页面
+      await Promise.allSettled(
+        selectedModelDetails.map(model => openModelPage(model, inputText))
+      )
 
       // 3秒后移除通知
       setTimeout(() => {
@@ -377,17 +537,9 @@ function NormalMode() {
          // 支持自动填充的模型列表
           const supportedModels: Record<string, { url: string[]; action: string }> = {
             'ChatGPT': { url: ['chatgpt.com', 'chat.openai.com'], action: 'autoFillAndSend' },
-            'claude-3': { url: ['claude.ai'], action: 'fillAndSend' },
             'kimi': { url: ['kimi.moonshot.cn'], action: 'fillAndSend' },
-            'gemini': { url: ['gemini.google.com'], action: 'fillAndSend' },
-            'yuanbao': { url: ['yuanbao.tencent.com'], action: 'fillAndSend' },
-            'tongyi': {
-      url: ['tongyi.aliyun.com', 'qianwen.aliyun.com'],
-      action: 'fillAndSend'
-    },
-            'doubao': { url: ['doubao.com'], action: 'fillAndSend' },
-            'wenxin': { url: ['yiyan.baidu.com', 'wenxin.baidu.com'], action: 'fillAndSend' },
-            'deepseek': { url: ['chat.deepseek.com'], action: 'fillAndSend' }
+            'deepseek': { url: ['chat.deepseek.com'], action: 'fillAndSend' },
+            'claude-3': { url: ['claude.ai'], action: 'fillAndSend' }
           }
           
           // 检查是否为支持的模型 - 优先使用精确ID匹配
@@ -440,428 +592,158 @@ function NormalMode() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-6 py-12">
-        {/* 使用说明 */}
-        {/* <div className="mb-8 text-center">
-          <div className="inline-flex items-center px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg text-sm">
-            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            <span>
-              <strong>使用说明：</strong>点击发送后会自动复制文本到剪贴板并打开选中的AI模型页面。支持的模型（Gemini、ChatGPT、Claude等）会自动填充文本并发送，其他模型请手动粘贴。
-            </span>
-          </div>
-        </div> */}
-        
-        {/* 快捷链接区域 */}
-        <div className="mb-16">
-          {/* <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-8 text-center">快捷访问</h2> */}
-          
-          {/* 选择提示 */}
-          {selectedLinks.size > 0 && (
-            <div className="mb-4 text-center">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                已选择 {selectedLinks.size} 个链接
-                <button 
-                   onClick={() => {
-                     openMultipleLinks(Array.from(selectedLinks) as number[])
-                     setSelectedLinks(new Set())
-                   }}
-                  className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+    <div className="hero-root relative min-h-screen w-full overflow-hidden bg-white dark:bg-[#0a0a0a]">
+      {/* 背景图片（来源与特效可在设置中选择，配置后可单独开关） */}
+      {bgImageEnabled && imageSrc && <ImageBackground src={imageSrc} effect={imageEffect} />}
+
+      {/* 背景视频（来源可在设置中选择，可关闭以提升老机器性能） */}
+      {bgVideoEnabled && <VideoBackground src={videoSrc} />}
+
+      {/* 内容层（顶部控制栏由 NewTabPage 全局渲染） */}
+      <div className="relative z-10 flex min-h-screen flex-col">
+        {/* Hero 主体 */}
+        <main
+          className="flex flex-1 flex-col items-center px-6 text-center"
+          style={{ paddingTop: '9rem', paddingBottom: '6rem' }}
+        >
+          <h1
+            className="hero-title font-display animate-fade-rise max-w-5xl whitespace-pre-wrap break-words text-5xl font-normal text-black sm:text-7xl md:text-8xl dark:text-white dark:[text-shadow:0_2px_24px_rgba(0,0,0,0.55)]"
+            style={{ lineHeight: 0.95, letterSpacing: '-0.03em' }}
+          >
+            {heroTitle.text.trim() || DEFAULT_HERO_TITLE}
+          </h1>
+
+          {/* AI 指令台 */}
+          <div className="animate-fade-rise-delay-2 mt-12 w-full max-w-4xl">
+            <div className="rounded-[28px] border border-black/10 bg-white/80 p-3 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.3)] backdrop-blur-md dark:border-white/20 dark:bg-black/60 dark:shadow-[0_24px_70px_-24px_rgba(0,0,0,0.95)]">
+              <textarea
+                value={inputText}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="向 AI 提问任何问题…（⌘/Ctrl + Enter 发送）"
+                rows={3}
+                className="w-full resize-none bg-transparent px-4 pt-3 text-base text-black placeholder:text-[#9b9b9b] focus:outline-none dark:text-white dark:placeholder:text-[#a3a3a3]"
+              />
+              <div className="flex items-center justify-between gap-3 px-2 pb-1 pt-2">
+                {/* 模型选择（语言模型） */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {config.basicModels
+                    .filter((model) => model.type === 'language' && model.enabled)
+                    .map((model: BasicModelConfig) => {
+                      const Icon = getAIIcon(model.id)
+                      const active = selectedModels.has(model.id)
+                      return (
+                        <button
+                          key={model.id}
+                          onClick={() => toggleModel(model.id)}
+                          title={`${model.name} — 点击选择`}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                            active
+                              ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
+                              : 'border-black/10 bg-white text-[#6F6F6F] hover:border-black/40 hover:text-black dark:border-white/25 dark:bg-white/[0.14] dark:text-white/90 dark:hover:border-white/60 dark:hover:text-white'
+                          }`}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          {model.name}
+                        </button>
+                      )
+                    })}
+                </div>
+
+                {/* 发送（与模型胶囊一致的精致样式） */}
+                <button
+                  onClick={handleSend}
+                  disabled={!inputText.trim() || selectedModels.size === 0}
+                  title={
+                    selectedModels.size === 0
+                      ? '请先选择至少一个模型'
+                      : !inputText.trim()
+                        ? '请输入内容'
+                        : '发送 (⌘/Ctrl + Enter)'
+                  }
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-black px-4 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:scale-100 dark:bg-white dark:text-black"
                 >
-                  全部打开
+                  <ArrowUpIcon className="h-3.5 w-3.5" />
+                  发送
                 </button>
-                <button 
-                  onClick={() => setSelectedLinks(new Set())}
-                  className="ml-1 px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600"
-                >
-                  清除
-                </button>
-              </span>
+              </div>
             </div>
-          )}
+
+            {/* 状态 / 字数 */}
+            <div className="mt-3 flex items-center justify-center gap-3 text-xs text-[#9b9b9b] dark:text-[#a3a3a3]">
+              <span>{selectedModels.size === 0 ? '未选择模型' : `已选择 ${selectedModels.size} 个模型`}</span>
+              <span>·</span>
+              <span>{inputText.length}/6000</span>
+            </div>
+          </div>
 
           {/* 快捷链接 */}
-           <div className="space-y-4">
-             {config.links.map((row: LinkConfig[], rowIndex: number) => (
-               <AnimatedBorderContainer
-                 key={rowIndex}
-                 className="flex justify-center space-x-6 max-w-6xl mx-auto"
-                 autoPlay={true}
-                 interval={3000}
-               >
-                 {row.map((link: LinkConfig) => (
-                   <div key={link.id} className="relative">
-                     <AdvancedMovingBorder
-                       borderRadius="0.75rem"
-                       containerClassName="min-w-40 max-w-52 h-11"
-                       className={`text-sm font-medium transition-all duration-300 ${
-                         selectedLinks.has(link.id)
-                           ? 'bg-blue-500 text-white shadow-lg'
-                           : 'bg-white dark:bg-slate-900 text-black dark:text-white'
-                       }`}
-                       duration={8000}
-                       onClick={(e) => handleLinkClick(link, e)}
-                     >
-                       <div className="flex items-center justify-center space-x-2">
-                         {link.icon && (
-                           <img 
-                             src={link.icon} 
-                             alt={`${link.title} icon`}
-                             className="w-4 h-4 flex-shrink-0"
-                             onError={(e) => {
-                               // 如果图标加载失败，隐藏图标
-                               e.currentTarget.style.display = 'none';
-                             }}
-                           />
-                         )}
-                         <span className="truncate">{link.title}</span>
-                       </div>
-                     </AdvancedMovingBorder>
-                     
-                     {/* 选中指示器 */}
-                     {selectedLinks.has(link.id) && (
-                       <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center z-20">
-                         <span className="text-xs font-bold text-gray-800">✓</span>
-                       </div>
-                     )}
-                   </div>
-                 ))}
-               </AnimatedBorderContainer>
-             ))}
-           </div>
-
-          {/* 使用提示 */}
-          <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-            💡 按住 Ctrl/Cmd 点击可多选链接，松开后点击任意链接批量打开
-          </div>
-        </div>
-
-        {/* AI 搜索框区域 */}
-        <div className="max-w-4xl mx-auto">
-          <div className="relative">
-            {/* 彩虹边框容器 */}
-            <div className="relative p-1 rounded-3xl bg-gradient-to-r from-pink-500 via-red-500 via-yellow-500 via-green-500 via-blue-500 via-indigo-500 to-purple-500 animate-gradient-x">
-              <div className="bg-white dark:bg-gray-800 rounded-3xl p-6">
-                {/* 模型选择区域 */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex flex-col space-y-3 flex-1">
-                    {/* 语言模型 */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]">
-                        语言模型:
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {config.basicModels.filter(model => model.type === 'language' && model.enabled).map((model: BasicModelConfig) => (
-                          <button
-                            key={model.id}
-                            onClick={() => {
-                              toggleModel(model.id)
-                            }}
-                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                              selectedModels.has(model.id)
-                                ? 'text-white shadow-md'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                            }`}
-                            style={{
-                              backgroundColor: selectedModels.has(model.id) ? model.selectedColor : undefined
-                            }}
-                            title={`${model.name} - 点击选择模型`}
-                          >
-                            {model.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* 多模态模型 */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[80px]">
-                      多模态:
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {config.basicModels.filter(model => model.type === 'multimedia' && model.enabled).map((model: BasicModelConfig) => (
-                          <button
-                            key={model.id}
-                            onClick={() => {
-                              toggleModel(model.id)
-                            }}
-                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
-                              selectedModels.has(model.id)
-                                ? 'text-white shadow-md'
-                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                            }`}
-                            style={{
-                              backgroundColor: selectedModels.has(model.id) ? model.selectedColor : undefined
-                            }}
-                            title={`${model.name} - 点击选择模型`}
-                          >
-                            {model.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                  </div>
-                  
-                  {/* 模型选择状态和字数统计 */}
-                  <div className="flex flex-col items-end space-y-2">
-                    {/* 模型选择状态 */}
-                    <div className={`text-xs px-2 py-1 rounded-full ${
-                      selectedModels.size === 0 
-                        ? 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300' 
-                        : 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300'
-                    }`}>
-                      {selectedModels.size === 0 ? '未选择模型' : `已选择 ${selectedModels.size} 个模型`}
-                    </div>
-                    
-                    {/* 字数统计 */}
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {inputText.length}/6000
-                    </div>
-                  </div>
+          {config.links.flat().length > 0 && (
+            <div className="animate-fade-rise-delay-2 mt-12 w-full max-w-4xl">
+              {selectedLinks.size > 0 && (
+                <div className="mb-4 flex items-center justify-center gap-2 text-xs text-[#6F6F6F] dark:text-[#b0b0b0]">
+                  <span>已选择 {selectedLinks.size} 个链接</span>
+                  <button
+                    onClick={() => {
+                      openMultipleLinks(Array.from(selectedLinks) as number[])
+                      setSelectedLinks(new Set())
+                    }}
+                    className="rounded-full bg-black px-3 py-1 text-white transition-transform hover:scale-[1.03] dark:bg-white dark:text-black"
+                  >
+                    全部打开
+                  </button>
+                  <button
+                    onClick={() => setSelectedLinks(new Set())}
+                    className="rounded-full border border-black/15 px-3 py-1 text-[#6F6F6F] hover:text-black dark:border-white/20 dark:text-[#b0b0b0] dark:hover:text-white"
+                  >
+                    清除
+                  </button>
                 </div>
+              )}
 
-                {/* 输入框 */}
-                <div className="relative">
-                  <textarea
-                    value={inputText}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="向 AI 提问任何问题..."
-                    className="w-full h-32 p-4 pr-16 border-0 resize-none rounded-2xl bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                  />
-                  
-                  {/* 发送按钮 */}
-                  <div className="absolute bottom-4 right-4">
-                    {/* 发送按钮 */}
-                    <button 
-                      onClick={handleSend}
-                      disabled={!inputText.trim() || selectedModels.size === 0}
-                      className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200"
-                      title={selectedModels.size === 0 ? "请先选择至少一个模型" : !inputText.trim() ? "请输入内容" : "发送消息 (⌘+Enter 或 Ctrl+Enter)"}
+              <div className="grid grid-cols-5 gap-3">
+                {config.links.flat().map((link: LinkConfig) => {
+                  const selected = selectedLinks.has(link.id)
+                  return (
+                    <button
+                      key={link.id}
+                      onClick={(e) => handleLinkClick(link, e)}
+                      title={link.url}
+                      className={`group flex w-full min-w-0 items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-sm transition-all duration-200 ${
+                        selected
+                          ? 'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
+                          : 'border-black/10 bg-white/70 text-[#3a3a3a] backdrop-blur hover:border-black/30 hover:bg-white dark:border-white/20 dark:bg-black/55 dark:text-white/90 dark:hover:border-white/40 dark:hover:bg-black/70'
+                      }`}
                     >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                      </svg>
+                      {link.icon ? (
+                        <img
+                          src={link.icon}
+                          alt=""
+                          className="h-4 w-4 shrink-0 rounded-sm"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <LinkIcon className="h-4 w-4 shrink-0 opacity-60" />
+                      )}
+                      <span className="truncate">{link.title}</span>
                     </button>
-                  </div>
-                </div>
+                  )
+                })}
               </div>
+
+              <p className="mt-5 text-center text-xs text-[#9b9b9b] dark:text-[#a3a3a3]">
+                按住 ⌘ / Ctrl 点击可多选链接，再点任意链接批量打开
+              </p>
             </div>
-          </div>
-        </div>
-
-
-       </div>
-     </div>
-   )
- }
-
-/**
- * 弹出菜单组件
- */
-function PopupMenu({ isOpen, onClose, currentMode, onModeChange }: {
-  isOpen: boolean
-  onClose: () => void
-  currentMode: string
-  onModeChange: (mode: string) => void
-}) {
-  const [isDarkMode, setIsDarkMode] = useState(false)
-
-  
-
-
-  /**
-   * 初始化主题状态
-   */
-  useEffect(() => {
-    const updateTheme = async () => {
-      try {
-        let savedTheme = 'light'
-        
-        // 尝试从 Chrome 存储读取主题设置
-        if (chrome?.storage?.sync) {
-          const result = await chrome.storage.sync.get(['mytab-config'])
-          if (result['mytab-config']?.theme) {
-            savedTheme = result['mytab-config'].theme
-          }
-        } else {
-          // 降级到 localStorage
-          const savedConfig = localStorage.getItem('mytab-config')
-          if (savedConfig) {
-            const parsed = JSON.parse(savedConfig)
-            savedTheme = parsed.theme || 'light'
-          }
-        }
-        
-        const shouldBeDark = savedTheme === 'dark'
-        
-        setIsDarkMode(shouldBeDark)
-        
-        if (shouldBeDark) {
-          document.documentElement.classList.add('dark')
-        } else {
-          document.documentElement.classList.remove('dark')
-        }
-      } catch (error) {
-        console.error('主题加载失败:', error)
-        // 降级到亮色主题
-        setIsDarkMode(false)
-        document.documentElement.classList.remove('dark')
-      }
-    }
-
-    updateTheme()
-  }, [])
-
-  /**
-   * 处理主题切换
-   */
-  const handleThemeChange = async (theme: 'light' | 'dark') => {
-    try {
-      // 保存主题设置
-      const config = { theme }
-      
-      if (chrome?.storage?.sync) {
-        const result = await chrome.storage.sync.get(['mytab-config'])
-        const currentConfig = result['mytab-config'] || {}
-        await chrome.storage.sync.set({ 'mytab-config': { ...currentConfig, theme } })
-      } else {
-        const savedConfig = localStorage.getItem('mytab-config')
-        const currentConfig = savedConfig ? JSON.parse(savedConfig) : {}
-        localStorage.setItem('mytab-config', JSON.stringify({ ...currentConfig, theme }))
-      }
-      
-      // 立即应用主题
-      const shouldBeDark = theme === 'dark'
-      
-      setIsDarkMode(shouldBeDark)
-      
-      if (shouldBeDark) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-    } catch (error) {
-      console.error('主题保存失败:', error)
-    }
-  }
-
-
-
-  if (!isOpen) return null
-
-  return (
-    <div 
-      className="fixed inset-0 z-50 flex items-start justify-end p-4 bg-black/20 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div 
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-80 mt-16 mr-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 头部 */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">设置菜单</h3>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="p-4 space-y-6">
-          {/* 模式切换 */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">页面模式</h4>
-            <div className="space-y-2">
-              {Object.entries(modeConfig).map(([mode, config]) => (
-                <button
-                  key={mode}
-                  onClick={() => onModeChange(mode)}
-                  className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    currentMode === mode
-                      ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <div className="text-lg">{config.icon}</div>
-                  <div className="text-left">
-                    <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{config.title}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{config.description}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 主题切换 */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">主题模式</h4>
-            <div className="flex space-x-2">
-                <button
-                  onClick={() => handleThemeChange('light')}
-                  className={`flex-1 p-2 rounded-lg text-sm transition-colors ${
-                    !isDarkMode
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  ☀️ 亮色
-                </button>
-                <button
-                  onClick={() => handleThemeChange('dark')}
-                  className={`flex-1 p-2 rounded-lg text-sm transition-colors ${
-                    isDarkMode
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  🌙 暗色
-                </button>
-              </div>
-          </div>
-
-
-
-          {/* 管理功能 */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">管理功能</h4>
-            <div className="space-y-2">
-                <button
-                   onClick={() => {
-                     if (chrome?.runtime?.openOptionsPage) {
-                       chrome.runtime.openOptionsPage()
-                     } else {
-                       window.open(chrome.runtime.getURL('options.html'))
-                     }
-                     onClose()
-                   }}
-                   className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                 >
-                   <div className="flex items-center space-x-3">
-                     <div className="text-lg">⚙️</div>
-                     <div className="text-left">
-                       <div className="text-sm font-medium text-gray-800 dark:text-gray-200">扩展设置</div>
-                       <div className="text-xs text-gray-500 dark:text-gray-400">管理链接和模型配置</div>
-                     </div>
-                   </div>
-                   <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                   </svg>
-                 </button>
-              </div>
-          </div>
-        </div>
+          )}
+        </main>
       </div>
     </div>
   )
 }
+
 
 /**
  * 新标签页组件
@@ -887,14 +769,54 @@ function getSavedModeSync(): string {
 function NewTabPage() {
   // 使用同步方式获取初始模式，避免闪烁
   const [currentMode, setCurrentMode] = useState(() => getSavedModeSync())
-  const [showPopupMenu, setShowPopupMenu] = useState(false)
   const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [bgMode, setBgMode] = useState<BgMode>(() => readBgMode())
+  const [hasBgImage] = useState(() => getImageSource().type !== 'none')
+  const [isDark, setIsDark] = useState(() => readDarkPref())
+
+  // 视频 / 图片是否生效（由单一的背景模式派生，天然互斥）
+  const bgVideoEnabled = bgMode === 'video'
+  const bgImageEnabled = bgMode === 'image'
+
+  /**
+   * 切换背景模式并持久化；再次点击同一项则回到「无」
+   */
+  const switchBgMode = (mode: BgMode) => {
+    setBgMode((prev) => {
+      const next = prev === mode ? 'none' : mode
+      writeBgMode(next)
+      return next
+    })
+  }
+
+  /**
+   * 应用并持久化主题
+   */
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark)
+  }, [isDark])
+
+  const toggleTheme = () => {
+    setIsDark((prev) => {
+      const next = !prev
+      writeDarkPref(next)
+      return next
+    })
+  }
 
   // 字体设置Hook
   const { fontSettings, getEnabledFont } = useFontSettings()
 
   // 字体初始化已合并到下方的字体应用 useEffect 中
+
+  /**
+   * 标签标题：每次打开随机一句心灵毒鸡汤；过长时在标签栏里滚动显示
+   */
+  useEffect(() => {
+    const stop = startTitleMarquee(getRandomQuote())
+    return stop
+  }, [])
 
   /**
    * 管理body类，确保极简模式样式立即生效
@@ -1008,12 +930,11 @@ function NewTabPage() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setIsModeSelectorOpen(true)
-        setShowPopupMenu(false)
         return
       }
 
       // Command+数字键快速切换模式（仅在模式选择面板未打开时）
-      if (!isModeSelectorOpen && !showPopupMenu && (e.metaKey || e.ctrlKey)) {
+      if (!isModeSelectorOpen && (e.metaKey || e.ctrlKey)) {
         const modes = Object.keys(modeConfig)
         switch (e.key) {
           case '1':
@@ -1030,7 +951,7 @@ function NewTabPage() {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isModeSelectorOpen, showPopupMenu])
+  }, [isModeSelectorOpen])
 
   /**
    * 渲染当前模式的内容
@@ -1039,7 +960,7 @@ function NewTabPage() {
     // 如果是极简模式，立即返回空白内容，不等待加载完成
     if (currentMode === TabMode.MINIMAL) {
       return (
-        <div className="min-h-screen w-full bg-white dark:bg-gray-900">
+        <div className="min-h-screen w-full bg-white dark:bg-[#0a0a0a]">
           {/* 极简模式 - 完全空白 */}
         </div>
       )
@@ -1049,12 +970,9 @@ function NewTabPage() {
     if (isLoading) {
       // NORMAL模式的加载状态 - 显示简化版本避免闪烁
       return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900">
+        <div className="min-h-screen w-full bg-white dark:bg-[#0a0a0a]">
           <div className="flex items-center justify-center min-h-screen">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">加载中...</p>
-            </div>
+            <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-black/70 dark:border-white/70"></div>
           </div>
         </div>
       )
@@ -1063,36 +981,72 @@ function NewTabPage() {
     // 加载完成后渲染完整内容
     switch (currentMode) {
       case TabMode.NORMAL:
-         return <NormalMode />
+         return <NormalMode bgVideoEnabled={bgVideoEnabled} bgImageEnabled={bgImageEnabled} />
 
       default:
-        return <NormalMode />
+        return <NormalMode bgVideoEnabled={bgVideoEnabled} bgImageEnabled={bgImageEnabled} />
     }
   }
 
+  const iconBtnClass =
+    'flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/70 text-[#3a3a3a] backdrop-blur transition-colors hover:bg-white hover:text-black dark:border-white/15 dark:bg-black/40 dark:text-white/80 dark:hover:bg-black/60 dark:hover:text-white'
+
+  const segBtnClass = (active: boolean) =>
+    `rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+      active
+        ? 'bg-black text-white dark:bg-white dark:text-black'
+        : 'text-[#6F6F6F] hover:text-black dark:text-[#a3a3a3] dark:hover:text-white'
+    }`
+
   return (
     <div className="relative">
-      {/* 设置按钮 */}
-      <button
-        onClick={() => setShowPopupMenu(true)}
-        className="fixed bottom-4 right-4 z-40 p-3 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 hover:scale-110 active:scale-95 transition-all duration-200 shadow-lg hover:shadow-xl"
-        title="设置菜单"
-      >
-        <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-        </svg>
-      </button>
+      {/* 顶部右侧控制栏 */}
+      <div className="fixed top-6 right-6 z-40 flex items-center gap-2">
+        {/* 模式切换：一般 / 极简 */}
+        <div className="flex items-center rounded-full border border-black/10 bg-white/70 p-0.5 backdrop-blur dark:border-white/15 dark:bg-black/40">
+          <button onClick={() => handleModeChange(TabMode.NORMAL)} className={segBtnClass(currentMode === TabMode.NORMAL)}>
+            一般
+          </button>
+          <button onClick={() => handleModeChange(TabMode.MINIMAL)} className={segBtnClass(currentMode === TabMode.MINIMAL)}>
+            极简
+          </button>
+        </div>
 
-      {/* 弹出菜单 */}
-         <PopupMenu
-           isOpen={showPopupMenu}
-           onClose={() => setShowPopupMenu(false)}
-           currentMode={currentMode}
-           onModeChange={(mode) => {
-             handleModeChange(mode)
-             setShowPopupMenu(false)
-           }}
-         />
+        {/* 主题切换 */}
+        <button onClick={toggleTheme} className={iconBtnClass} title={isDark ? '切换到浅色' : '切换到深色'}>
+          {isDark ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
+        </button>
+
+        {/* 背景图片开关（仅在已配置图片来源时显示，与视频互斥） */}
+        {hasBgImage && (
+          <button
+            onClick={() => switchBgMode('image')}
+            className={iconBtnClass}
+            title={bgImageEnabled ? '关闭背景图片' : '使用背景图片'}
+          >
+            {bgImageEnabled ? <ImageIcon className="h-4 w-4" /> : <ImageOffIcon className="h-4 w-4" />}
+          </button>
+        )}
+
+        {/* 背景视频开关（与图片互斥） */}
+        <button
+          onClick={() => switchBgMode('video')}
+          className={iconBtnClass}
+          title={bgVideoEnabled ? '关闭背景视频' : '使用背景视频'}
+        >
+          {bgVideoEnabled ? <VideoIcon className="h-4 w-4" /> : <VideoOffIcon className="h-4 w-4" />}
+        </button>
+
+        {/* 管理 */}
+        <button
+          onClick={openOptionsPage}
+          className="inline-flex items-center gap-1.5 rounded-full bg-black px-5 py-2 text-sm font-medium text-white transition-transform duration-200 hover:scale-[1.03] dark:bg-white dark:text-black"
+          title="扩展设置"
+        >
+          <SettingsIcon className="h-4 w-4" />
+          管理
+        </button>
+      </div>
 
       {/* 模式选择面板 */}
       <ModeSelector
