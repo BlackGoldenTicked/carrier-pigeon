@@ -55,8 +55,8 @@ export const FontManager: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black/70 dark:border-white/70"></div>
-        <span className="ml-2 text-[#6F6F6F]">加载字体配置中...</span>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ink/70"></div>
+        <span className="ml-2 text-ink2">加载字体配置中...</span>
       </div>
     )
   }
@@ -67,7 +67,7 @@ export const FontManager: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 字体大小 */}
         <div>
-          <label className="block text-sm font-medium text-[#6F6F6F] mb-2">
+          <label className="block text-sm font-medium text-ink2 mb-2">
             字体大小: {fontSettings.fontSize}px
           </label>
           <input
@@ -77,9 +77,9 @@ export const FontManager: React.FC = () => {
             step="1"
             value={fontSettings.fontSize}
             onChange={(e) => handleFontSizeChange(Number(e.target.value))}
-            className="w-full h-2 cursor-pointer appearance-none rounded-lg bg-black/10 accent-black dark:bg-white/15 dark:accent-white"
+            className="w-full h-2 cursor-pointer appearance-none rounded-lg bg-bg3 accent-[var(--accent)]"
           />
-          <div className="flex justify-between text-xs text-[#9b9b9b] mt-1">
+          <div className="flex justify-between text-xs text-ink3 mt-1">
             <span>12px</span>
             <span>24px</span>
           </div>
@@ -87,7 +87,7 @@ export const FontManager: React.FC = () => {
 
         {/* 行高 */}
         <div>
-          <label className="block text-sm font-medium text-[#6F6F6F] mb-2">
+          <label className="block text-sm font-medium text-ink2 mb-2">
             行高: {fontSettings.lineHeight}
           </label>
           <input
@@ -97,9 +97,9 @@ export const FontManager: React.FC = () => {
             step="0.1"
             value={fontSettings.lineHeight}
             onChange={(e) => handleLineHeightChange(Number(e.target.value))}
-            className="w-full h-2 cursor-pointer appearance-none rounded-lg bg-black/10 accent-black dark:bg-white/15 dark:accent-white"
+            className="w-full h-2 cursor-pointer appearance-none rounded-lg bg-bg3 accent-[var(--accent)]"
           />
-          <div className="flex justify-between text-xs text-[#9b9b9b] mt-1">
+          <div className="flex justify-between text-xs text-ink3 mt-1">
             <span>1.2</span>
             <span>2.0</span>
           </div>
@@ -113,16 +113,16 @@ export const FontManager: React.FC = () => {
           id="applyToAllPages"
           checked={fontSettings.applyToAllPages}
           onChange={toggleApplyToAllPages}
-          className="h-4 w-4 rounded border-black/30 accent-black dark:accent-white"
+          className="h-4 w-4 rounded accent-[var(--accent)]"
         />
-        <label htmlFor="applyToAllPages" className="ml-2 text-sm text-[#6F6F6F]">
+        <label htmlFor="applyToAllPages" className="ml-2 text-sm text-ink2">
           应用到所有页面
         </label>
       </div>
 
       {/* 字体列表 */}
       <div>
-        <h3 className="text-lg font-semibold text-black dark:text-white mb-4">可用字体</h3>
+        <h3 className="text-lg font-semibold text-ink mb-4">可用字体</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {availableFonts.map(font => (
             <button
@@ -131,19 +131,19 @@ export const FontManager: React.FC = () => {
               onClick={() => handleFontSelect(font.id)}
               className={`cursor-pointer rounded-xl border p-4 text-left transition-all ${
                 enabledFont?.id === font.id
-                  ? 'border-black bg-black/[0.04] dark:border-white dark:bg-white/[0.06]'
-                  : 'border-black/10 hover:border-black/30 hover:bg-black/[0.02] dark:border-white/10 dark:hover:border-white/30 dark:hover:bg-white/[0.04]'
+                  ? 'border-accent bg-[var(--accent-bg)]'
+                  : 'border-line hover:border-line2 hover:bg-card-hover'
               }`}
             >
               <div className="flex items-center justify-between">
                 <h4
-                  className="font-medium text-black dark:text-white"
+                  className="font-medium text-ink"
                   style={{ fontFamily: font.fontFamily, fontWeight: font.fontWeight || '400' }}
                 >
                   {font.displayName}
                 </h4>
                 {enabledFont?.id === font.id && (
-                  <div className="h-2 w-2 rounded-full bg-black dark:bg-white"></div>
+                  <div className="h-2 w-2 rounded-full bg-accent"></div>
                 )}
               </div>
             </button>

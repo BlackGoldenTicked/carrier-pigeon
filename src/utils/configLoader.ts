@@ -130,8 +130,8 @@ export class ConfigLoader {
       this.setCacheTimestamp(cacheKey)
       this.recordLoadTime(cacheKey, startTime)
     }
-    
-    return this.quickLinksData
+
+    return this.quickLinksData ?? []
   }
 
   /**

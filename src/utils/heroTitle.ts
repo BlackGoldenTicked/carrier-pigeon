@@ -36,15 +36,17 @@ export const HERO_TITLE_SIZE_MAX = 120
 
 const STORAGE_KEY = 'mytab-hero-title'
 const STYLE_ID = 'hero-title-style'
-const DEFAULT_FONT_ID = 'instrument-serif'
+const DEFAULT_FONT_ID = 'young-serif'
 const DEFAULT_SIZE = 96
 
 /** 可选的标题字体预设（衬线 / 无衬线 / 等宽 / 像素 / 中文） */
 export const HERO_TITLE_FONTS: HeroTitleFont[] = [
   {
-    id: 'instrument-serif',
-    label: 'Instrument Serif',
-    fontFamily: "'Instrument Serif', Georgia, 'Times New Roman', serif"
+    id: 'young-serif',
+    label: 'Young Serif',
+    fontFamily: "'Young Serif', 'Noto Serif SC', Georgia, serif",
+    cssUrl:
+      'https://fonts.googleapis.com/css2?family=Young+Serif&family=Noto+Serif+SC:wght@500;600&display=swap'
   },
   {
     id: 'system-sans',

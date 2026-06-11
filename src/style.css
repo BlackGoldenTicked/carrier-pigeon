@@ -2,176 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   设计令牌 —— 与 monorepo 其他扩展（buddy）共享同一调色板
+   带暖色相的近黑近白中性色 + #D97756 主题色
+   深色通过 .dark 类切换（支持手动覆盖系统主题）
+   ============================================================ */
+:root {
+  --bg: #fafaf8;
+  --bg2: #f2f1ec;
+  --bg3: #eceae3;
+  --text: #1a1a19;
+  --text2: #5a5a57;
+  --text3: #8e8e89;
+  --border: #e2e1db;
+  --border2: #d0cfc9;
+  --accent: #d97756;
+  --accent2: #c4623e;
+  --accent-bg: rgba(217, 119, 86, 0.1);
+  --card: #ffffff;
+  --card-h: #fdfcfb;
+  --shadow-s: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-m: 0 4px 12px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-l: 0 10px 34px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Noto Sans SC', sans-serif;
+  --font-display: 'Young Serif', 'Noto Serif SC', Georgia, serif;
+}
+
+.dark {
+  --bg: #0e0e0c;
+  --bg2: #171714;
+  --bg3: #212120;
+  --text: #f0efe9;
+  --text2: #a0a09b;
+  --text3: #6a6a65;
+  --border: #2a2a27;
+  --border2: #353532;
+  --accent: #e08060;
+  --accent2: #c86840;
+  --accent-bg: rgba(217, 119, 86, 0.14);
+  --card: #171714;
+  --card-h: #1d1d1a;
+  --shadow-s: 0 1px 3px rgba(0, 0, 0, 0.32);
+  --shadow-m: 0 4px 12px rgba(0, 0, 0, 0.42);
+  --shadow-l: 0 10px 34px rgba(0, 0, 0, 0.52);
+}
+
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* 极简模式预加载样式 - 确保立即显示正确背景 */
+  /* 极简模式预加载：确保立即显示正确背景 */
   body.minimal-mode {
-    background-color: white;
+    background-color: var(--bg);
     transition: none !important;
   }
-  
-  body.minimal-mode.dark {
-    background-color: rgb(17, 24, 39); /* gray-900 */
-  }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+  /* 键盘可达性：统一的焦点可见样式 */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
-/* 自定义动画和效果 */
-.gradient-bg {
-  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
-}
-
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.glass-effect {
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.dark .glass-effect {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* 彩虹动画效果 */
-@keyframes gradient-x {
-  0%, 100% {
-    background-size: 200% 200%;
-    background-position: left center;
-  }
-  50% {
-    background-size: 200% 200%;
-    background-position: right center;
-  }
-}
-
-.animate-gradient-x {
-  animation: gradient-x 3s ease infinite;
-  background-size: 200% 200%;
-}
-
-/* Hover Border Gradient 动画 */
-@keyframes gradient-border {
-  0% {
-    background-position: 0% 0%;
-  }
-  25% {
-    background-position: 100% 0%;
-  }
-  50% {
-    background-position: 100% 100%;
-  }
-  75% {
-    background-position: 0% 100%;
-  }
-  100% {
-    background-position: 0% 0%;
-  }
-}
-
-/* 彩色边框动画 */
-@keyframes gradientSlide {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes gradientPulse {
-  0%, 100% {
-    background-position: 0% 50%;
-    transform: scale(1);
-  }
-  50% {
-    background-position: 100% 50%;
-    transform: scale(1.02);
-  }
-}
-
-/* Tailwind 自定义动画类 */
-.animate-gradient-slide {
-  animation: gradientSlide 3s ease-in-out infinite;
-}
-
-.animate-gradient-pulse {
-  animation: gradientPulse 1.5s ease-in-out infinite;
 }
 
 /* ============================================================
-   电影感 Hero（一般模式）—— Aethera 风格
+   字体
+   正文：系统栈（中文为主的 UI，PingFang/Noto Sans 渲染最佳）
+   标题：Young Serif（温暖的展示衬线）+ 思源宋体中文回退
+   用 !important + 更高特异性覆盖全局字体注入器
+   ============================================================ */
+.hero-root,
+.hero-root *,
+.app-shell,
+.app-shell * {
+  font-family: var(--font) !important;
+}
+
+.hero-root .font-display,
+.hero-root .font-display *,
+.app-shell .font-display,
+.app-shell .font-display * {
+  font-family: var(--font-display) !important;
+}
+
+/* ============================================================
+   动效
    ============================================================ */
 
-/* 入场动画：淡入 + 上浮 */
+/* 入场：淡入 + 上浮 */
 @keyframes fade-rise {
   from {
     opacity: 0;
@@ -184,37 +109,50 @@
 }
 
 .animate-fade-rise {
-  animation: fade-rise 0.8s ease-out both;
+  animation: fade-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-fade-rise-delay {
-  animation: fade-rise 0.8s ease-out 0.2s both;
+  animation: fade-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
 }
 
 .animate-fade-rise-delay-2 {
-  animation: fade-rise 0.8s ease-out 0.4s both;
+  animation: fade-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
 }
 
-/*
-  Hero 字体：正文 Inter，标题 Instrument Serif。
-  用 !important + 更高特异性覆盖全局字体注入器（* { font-family: ... !important }）。
-*/
-.hero-root,
-.hero-root *,
-.app-shell,
-.app-shell * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif !important;
+/* Toast 入场 */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.hero-root .font-display,
-.hero-root .font-display *,
-.app-shell .font-display,
-.app-shell .font-display * {
-  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif !important;
+.animate-toast-in {
+  animation: toast-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* 背景图片「全息投影」特效动画：滚动扫描光束 + 随机闪烁 */
+/* 侧滑面板入场 */
+@keyframes panel-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-panel-in {
+  animation: panel-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* 背景图片「全息投影」特效：滚动扫描光束 + 随机闪烁 */
 @keyframes holo-scan {
   0% {
     top: -16%;
@@ -253,7 +191,35 @@
 
 @media (prefers-reduced-motion: reduce) {
   .holo-scan-beam,
-  .holo-flicker {
+  .holo-flicker,
+  .animate-fade-rise,
+  .animate-fade-rise-delay,
+  .animate-fade-rise-delay-2,
+  .animate-panel-in {
     animation: none;
   }
+}
+
+/* ============================================================
+   背景可读性渐晕：保证标题文字压在视频/图片上始终可读
+   浅色用白色渐晕，深色用黑色渐晕
+   ============================================================ */
+.bg-scrim {
+  background: linear-gradient(
+    180deg,
+    rgba(250, 250, 248, 0.55) 0%,
+    rgba(250, 250, 248, 0.25) 35%,
+    rgba(250, 250, 248, 0.1) 60%,
+    rgba(250, 250, 248, 0.35) 100%
+  );
+}
+
+.dark .bg-scrim {
+  background: linear-gradient(
+    180deg,
+    rgba(14, 14, 12, 0.5) 0%,
+    rgba(14, 14, 12, 0.2) 35%,
+    rgba(14, 14, 12, 0.1) 60%,
+    rgba(14, 14, 12, 0.4) 100%
+  );
 }

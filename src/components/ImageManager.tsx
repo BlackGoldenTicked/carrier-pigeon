@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { toast } from './ui/toast'
 import {
   getImageSource,
   setImageUrl,
@@ -34,7 +35,6 @@ export function ImageManager() {
   const [localName, setLocalName] = useState<string | undefined>()
   const [previewSrc, setPreviewSrc] = useState<string>('')
   const [effect, setEffect] = useState<ImageEffectConfig>(() => getImageEffect())
-  const [status, setStatus] = useState<string>('')
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewObjectUrl = useRef<string | null>(null)
@@ -76,10 +76,7 @@ export function ImageManager() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const flash = (msg: string) => {
-    setStatus(msg)
-    window.setTimeout(() => setStatus(''), 2000)
-  }
+  const flash = (msg: string, kind: 'info' | 'success' | 'error' = 'info') => toast(msg, { kind })
 
   const applyNone = async () => {
     setImageNone()
@@ -92,17 +89,17 @@ export function ImageManager() {
   const applyUrl = async () => {
     const url = urlInput.trim()
     if (!url) {
-      flash('请输入图片地址')
+      flash('请输入图片地址', 'error')
       return
     }
     if (!/^https?:\/\//i.test(url)) {
-      flash('请输入以 http(s):// 开头的地址')
+      flash('请输入以 http(s):// 开头的地址', 'error')
       return
     }
     setImageUrl(url)
     setType('url')
     await refreshPreview()
-    flash('在线图片已保存')
+    flash('在线图片已保存', 'success')
   }
 
   const handleFile = async (file: File | undefined) => {
@@ -110,7 +107,7 @@ export function ImageManager() {
       return
     }
     if (!file.type.startsWith('image/')) {
-      flash('请选择图片文件')
+      flash('请选择图片文件', 'error')
       return
     }
     try {
@@ -118,9 +115,9 @@ export function ImageManager() {
       setType('local')
       setLocalName(file.name)
       await refreshPreview()
-      flash('本地图片已保存')
+      flash('本地图片已保存', 'success')
     } catch {
-      flash('保存失败，文件可能过大')
+      flash('保存失败，文件可能过大', 'error')
     }
   }
 
@@ -142,14 +139,14 @@ export function ImageManager() {
   const tabClass = (active: boolean) =>
     `rounded-full px-4 py-2 text-sm font-medium transition-colors ${
       active
-        ? 'bg-black text-white dark:bg-white dark:text-black'
-        : 'text-[#6F6F6F] hover:bg-black/[0.05] hover:text-black dark:hover:bg-white/[0.06] dark:hover:text-white'
+        ? 'bg-ink text-bg'
+        : 'text-ink2 hover:bg-bg2 hover:text-ink'
     }`
 
   return (
     <div className="space-y-6">
       {/* 来源类型 */}
-      <div className="inline-flex items-center gap-1 rounded-full border border-black/10 p-1 dark:border-white/10">
+      <div className="inline-flex items-center gap-1 rounded-full border border-line bg-bg2 p-1">
         <button className={tabClass(type === 'none')} onClick={applyNone}>
           不使用
         </button>
@@ -164,7 +161,7 @@ export function ImageManager() {
       {/* 在线地址 */}
       {type === 'url' && (
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-[#6F6F6F]">图片地址（.jpg / .png / .webp）</label>
+          <label className="block text-sm font-medium text-ink2">图片地址（.jpg / .png / .webp）</label>
           <div className="flex gap-2">
             <input
               type="url"
@@ -172,11 +169,11 @@ export function ImageManager() {
               onChange={(e) => setUrlInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && applyUrl()}
               placeholder="https://example.com/background.jpg"
-              className="flex-1 rounded-xl border border-black/15 bg-white px-3 py-2 text-sm text-black focus:border-black focus:outline-none dark:border-white/15 dark:bg-white/[0.06] dark:text-white"
+              className="flex-1 rounded-token-sm border border-line bg-card px-3 py-2 text-sm text-ink focus:border-line2 focus:outline-none"
             />
             <button
               onClick={applyUrl}
-              className="shrink-0 rounded-full bg-black px-5 py-2 text-sm font-medium text-white transition-transform hover:scale-[1.03] dark:bg-white dark:text-black"
+              className="shrink-0 rounded-token-sm bg-accent px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-deep"
             >
               应用
             </button>
@@ -201,15 +198,15 @@ export function ImageManager() {
             }}
             className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
               dragOver
-                ? 'border-black bg-black/[0.03] dark:border-white dark:bg-white/[0.06]'
-                : 'border-black/15 hover:border-black/40 dark:border-white/15 dark:hover:border-white/40'
+                ? 'border-accent bg-[var(--accent-bg)]'
+                : 'border-line2 hover:border-ink3'
             }`}
           >
-            <ImageIcon className="h-7 w-7 text-[#6F6F6F]" />
-            <div className="text-sm font-medium text-black dark:text-white">点击选择 或 拖拽图片到此处</div>
-            <div className="text-xs text-[#9b9b9b]">支持 jpg / png / webp，建议使用高分辨率横向图片</div>
+            <ImageIcon className="h-7 w-7 text-ink2" />
+            <div className="text-sm font-medium text-ink">点击选择 或 拖拽图片到此处</div>
+            <div className="text-xs text-ink3">支持 jpg / png / webp，建议使用高分辨率横向图片</div>
             {localName && (
-              <div className="mt-1 max-w-full truncate text-xs text-[#6F6F6F]">当前：{localName}</div>
+              <div className="mt-1 max-w-full truncate text-xs text-ink2">当前：{localName}</div>
             )}
           </div>
           <input
@@ -222,7 +219,7 @@ export function ImageManager() {
           {localName && (
             <button
               onClick={removeLocal}
-              className="rounded-full border border-black/10 px-4 py-1.5 text-xs text-[#6F6F6F] transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:border-white/10 dark:hover:border-red-500/40 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+              className="rounded-token-sm border border-line px-4 py-1.5 text-xs text-ink2 transition-colors hover:border-red-300 hover:text-red-500"
             >
               移除本地图片
             </button>
@@ -232,15 +229,13 @@ export function ImageManager() {
 
       {/* 不使用说明 */}
       {type === 'none' && (
-        <p className="text-sm text-[#6F6F6F]">未设置背景图片。选择「在线地址」或「本地上传」即可启用。</p>
+        <p className="text-sm text-ink2">未设置背景图片。选择「在线地址」或「本地上传」即可启用。</p>
       )}
 
-      {/* 状态提示 */}
-      {status && <p className="text-xs text-[#6F6F6F]">{status}</p>}
 
       {/* 特效 */}
       <div>
-        <h3 className="mb-3 text-sm font-medium text-[#6F6F6F]">图片特效</h3>
+        <h3 className="mb-3 text-sm font-medium text-ink2">图片特效</h3>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {IMAGE_EFFECTS.map((option) => {
             const active = effect.type === option.id
@@ -250,15 +245,15 @@ export function ImageManager() {
                 onClick={() => updateEffect({ type: option.id })}
                 className={`rounded-xl border p-3 text-left transition-all ${
                   active
-                    ? 'border-black bg-black/[0.04] dark:border-white dark:bg-white/[0.06]'
-                    : 'border-black/10 hover:border-black/30 hover:bg-black/[0.02] dark:border-white/10 dark:hover:border-white/30 dark:hover:bg-white/[0.04]'
+                    ? 'border-accent bg-[var(--accent-bg)]'
+                    : 'border-line hover:border-line2 hover:bg-card-hover'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-black dark:text-white">{option.label}</span>
-                  {active && <div className="h-2 w-2 rounded-full bg-black dark:bg-white" />}
+                  <span className="text-sm font-medium text-ink">{option.label}</span>
+                  {active && <div className="h-2 w-2 rounded-full bg-accent" />}
                 </div>
-                <div className="mt-1 text-xs text-[#9b9b9b]">{option.desc}</div>
+                <div className="mt-1 text-xs text-ink3">{option.desc}</div>
               </button>
             )
           })}
@@ -267,7 +262,7 @@ export function ImageManager() {
         {/* 强度 */}
         {effect.type !== 'none' && (
           <div className="mt-4">
-            <label className="mb-2 block text-sm font-medium text-[#6F6F6F]">
+            <label className="mb-2 block text-sm font-medium text-ink2">
               特效强度：{effect.intensity}
             </label>
             <input
@@ -277,9 +272,9 @@ export function ImageManager() {
               step={5}
               value={effect.intensity}
               onChange={(e) => updateEffect({ intensity: clampIntensity(Number(e.target.value)) })}
-              className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-black/10 accent-black dark:bg-white/15 dark:accent-white"
+              className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-bg3 accent-[var(--accent)]"
             />
-            <div className="mt-1 flex justify-between text-xs text-[#9b9b9b]">
+            <div className="mt-1 flex justify-between text-xs text-ink3">
               <span>轻微</span>
               <span>强烈</span>
             </div>
@@ -287,7 +282,7 @@ export function ImageManager() {
         )}
 
         {PIXEL_READ_EFFECT_TYPES.has(effect.type) && (
-          <p className="mt-2 text-xs text-[#9b9b9b]">
+          <p className="mt-2 text-xs text-ink3">
             此特效需要读取图片像素：本地上传不受限；在线图片需站点支持跨域（如
             Unsplash），否则自动降级（数字雨退化为经典绿色，其余退化为原图显示）。
           </p>
@@ -297,8 +292,8 @@ export function ImageManager() {
       {/* 预览（实时渲染特效与明暗遮罩，即最终效果） */}
       {previewSrc && (
         <div>
-          <h3 className="mb-3 text-sm font-medium text-[#6F6F6F]">预览</h3>
-          <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-black/10 bg-black dark:border-white/10">
+          <h3 className="mb-3 text-sm font-medium text-ink2">预览</h3>
+          <div className="relative aspect-video w-full overflow-hidden rounded-token border border-line bg-black">
             <ImageBackground key={previewSrc} src={previewSrc} effect={effect} />
           </div>
         </div>
@@ -306,7 +301,7 @@ export function ImageManager() {
 
       {/* 免费图片素材站 */}
       <div>
-        <h3 className="mb-3 text-sm font-medium text-[#6F6F6F]">下载免费高清壁纸</h3>
+        <h3 className="mb-3 text-sm font-medium text-ink2">下载免费高清壁纸</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {RESOURCE_SITES.map((site) => (
             <a
@@ -314,13 +309,13 @@ export function ImageManager() {
               href={site.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center justify-between rounded-xl border border-black/10 bg-white/60 px-4 py-3 transition-colors hover:border-black/30 hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/30 dark:hover:bg-white/[0.08]"
+              className="group flex items-center justify-between rounded-token-sm border border-line bg-card px-4 py-3 transition-colors hover:border-line2 hover:bg-card-hover"
             >
               <div>
-                <div className="text-sm font-medium text-black dark:text-white">{site.name}</div>
-                <div className="text-xs text-[#9b9b9b]">{site.desc}</div>
+                <div className="text-sm font-medium text-ink">{site.name}</div>
+                <div className="text-xs text-ink3">{site.desc}</div>
               </div>
-              <ArrowUpRightIcon className="h-4 w-4 text-[#9b9b9b] transition-colors group-hover:text-black dark:group-hover:text-white" />
+              <ArrowUpRightIcon className="h-4 w-4 text-ink3 transition-colors group-hover:text-ink" />
             </a>
           ))}
         </div>
