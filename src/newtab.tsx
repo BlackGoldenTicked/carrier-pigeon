@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import './style.css'
+// 必须在任何首屏同步读取（主题 / 模式 / 背景来源）之前执行键名迁移
+import './utils/migrateStorage'
 
 import { ModeSelector } from './components/ui/mode-selector'
 import { NormalMode } from './components/NormalMode'
@@ -32,7 +34,7 @@ import { getImageSource } from './utils/imageSource'
 
 const TabMode = getTabMode()
 const modeConfig = getModeConfig()
-const MODE_KEY = 'mytab-current-mode'
+const MODE_KEY = 'carrier-pigeon-current-mode'
 
 /** 打开扩展设置页 */
 function openOptionsPage(): void {

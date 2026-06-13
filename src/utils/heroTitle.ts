@@ -34,7 +34,7 @@ export const MAX_HERO_TITLE_LENGTH = 60
 export const HERO_TITLE_SIZE_MIN = 40
 export const HERO_TITLE_SIZE_MAX = 120
 
-const STORAGE_KEY = 'mytab-hero-title'
+const STORAGE_KEY = 'carrier-pigeon-hero-title'
 const STYLE_ID = 'hero-title-style'
 const DEFAULT_FONT_ID = 'young-serif'
 const DEFAULT_SIZE = 96

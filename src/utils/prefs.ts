@@ -8,11 +8,11 @@
 
 export type BgMode = 'video' | 'image' | 'none'
 
-const BG_MODE_KEY = 'mytab-bg-mode'
+const BG_MODE_KEY = 'carrier-pigeon-bg-mode'
 /** 旧版「背景视频开关」key，用于一次性迁移 */
-const LEGACY_BG_VIDEO_KEY = 'mytab-bg-video'
-const THEME_KEY = 'mytab-theme'
-const ONBOARDING_KEY = 'mytab-onboarding-dismissed'
+const LEGACY_BG_VIDEO_KEY = 'carrier-pigeon-bg-video'
+const THEME_KEY = 'carrier-pigeon-theme'
+const ONBOARDING_KEY = 'carrier-pigeon-onboarding-dismissed'
 
 export function readBgMode(): BgMode {
   try {

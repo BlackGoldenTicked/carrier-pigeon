@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './style.css'
+// 在任何存储读取之前执行键名迁移
+import './utils/migrateStorage'
 
 import { FontManager } from './components/FontManager'
 import { VideoManager } from './components/VideoManager'
@@ -141,7 +143,7 @@ function AboutSection() {
   return (
     <div className="space-y-8">
       <div>
-        <h3 className="mb-2 text-sm font-medium text-ink">MyTab</h3>
+        <h3 className="mb-2 text-sm font-medium text-ink">信鸽 Carrier Pigeon</h3>
         <p className="text-sm text-ink2">
           版本 {version} · 一句话同时发给多个 AI 平台的新标签页
         </p>

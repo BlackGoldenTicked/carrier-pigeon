@@ -68,7 +68,7 @@ export const PIXEL_READ_EFFECT_TYPES: ReadonlySet<ImageEffectType> = new Set([
   'particles'
 ])
 
-const EFFECT_KEY = 'mytab-image-effect'
+const EFFECT_KEY = 'carrier-pigeon-image-effect'
 export const DEFAULT_IMAGE_EFFECT: ImageEffectConfig = { type: 'none', intensity: 50 }
 
 const VALID_TYPES = new Set<ImageEffectType>(IMAGE_EFFECTS.map((e) => e.id))

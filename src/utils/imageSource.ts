@@ -7,6 +7,8 @@
  * - 与背景视频共用同一个 IndexedDB（不同 key），互不影响
  */
 
+import { migrationReady } from './migrateStorage'
+
 export type ImageSourceType = 'none' | 'url' | 'local'
 
 export interface ImageSource {
@@ -17,8 +19,8 @@ export interface ImageSource {
   name?: string
 }
 
-const SOURCE_KEY = 'mytab-image-source'
-const DB_NAME = 'mytab-media'
+const SOURCE_KEY = 'carrier-pigeon-image-source'
+const DB_NAME = 'carrier-pigeon-media'
 const STORE = 'media'
 const BLOB_KEY = 'bgImage'
 
@@ -89,6 +91,7 @@ export async function saveLocalImage(file: File): Promise<void> {
 /** 读取本地图片并生成可显示的 objectURL；调用方负责 revoke */
 export async function loadLocalImageURL(): Promise<string | null> {
   try {
+    await migrationReady
     const db = await openDB()
     try {
       const blob = await new Promise<Blob | undefined>((resolve, reject) => {

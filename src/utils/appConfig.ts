@@ -2,11 +2,12 @@
  * 应用配置存储层（chrome.storage.sync）
  *
  * - 链接与模型分 key 存储，避免单项撞上 sync 8KB/项 配额
- * - 自动从旧版单 key（mytab-config）迁移
+ * - 自动从旧版单 key（carrier-pigeon-config）迁移
  * - 模型列表与 JSON 默认配置智能合并：扩展更新新增的模型自动出现，用户的启用状态保留
  */
 
 import { getQuickLinks, getAIModels } from './configLoader'
+import { migrationReady } from './migrateStorage'
 
 export interface QuickLinkItem {
   id: number
@@ -32,9 +33,9 @@ export interface AppConfig {
 
 export const MAX_LINKS = 20
 
-const LINKS_KEY = 'mytab-links'
-const MODELS_KEY = 'mytab-models'
-const LEGACY_KEY = 'mytab-config'
+const LINKS_KEY = 'carrier-pigeon-links'
+const MODELS_KEY = 'carrier-pigeon-models'
+const LEGACY_KEY = 'carrier-pigeon-config'
 
 /** JSON 默认链接（扁平化，旧配置是按行分组的二维数组） */
 function defaultLinks(): QuickLinkItem[] {
@@ -88,12 +89,13 @@ function sanitizeLinks(raw: unknown): QuickLinkItem[] | null {
  */
 export async function loadAppConfig(): Promise<AppConfig> {
   try {
+    await migrationReady
     const result = await chrome.storage.sync.get([LINKS_KEY, MODELS_KEY, LEGACY_KEY])
 
     let links = sanitizeLinks(result[LINKS_KEY])
     let models = Array.isArray(result[MODELS_KEY]) ? (result[MODELS_KEY] as AIModelItem[]) : null
 
-    // 迁移旧版 mytab-config：{ links: 二维数组, basicModels, theme }
+    // 迁移旧版 carrier-pigeon-config：{ links: 二维数组, basicModels, theme }
     const legacy = result[LEGACY_KEY]
     if ((!links || !models) && legacy && typeof legacy === 'object') {
       if (!links && Array.isArray(legacy.links)) {

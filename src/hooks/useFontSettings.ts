@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { FontConfig, FontSettings, FontCategory } from '../types'
 import fontConfigData from '../config/fontConfig.json'
+import { migrationReady } from '../utils/migrateStorage'
 
-const FONT_SETTINGS_KEY = 'mytab-font-settings'
+const FONT_SETTINGS_KEY = 'carrier-pigeon-font-settings'
 
 /**
  * 统一存储工具：优先 chrome.storage.sync，降级到 localStorage
@@ -54,6 +55,7 @@ export const useFontSettings = () => {
   const loadFontSettings = useCallback(async () => {
     try {
       setLoading(true)
+      await migrationReady
       const raw = await storage.get(FONT_SETTINGS_KEY)
       const settings = raw ? JSON.parse(raw) : defaultFontSettings
       

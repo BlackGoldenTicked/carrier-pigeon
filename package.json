@@ -1,8 +1,8 @@
 {
-  "name": "mytab-extension",
-  "displayName": "mytab",
+  "name": "com.chaordex.carrier-pigeon",
+  "displayName": "信鸽 Carrier Pigeon",
   "version": "0.0.1",
-  "description": "mytab",
+  "description": "一句话同时发给多个 AI 平台的 Chrome 新标签页扩展",
   "author": "zhangyu",
   "scripts": {
     "dev": "plasmo dev",

@@ -6,6 +6,8 @@
  * - newtab 与 options 同源，可共享读取
  */
 
+import { migrationReady } from './migrateStorage'
+
 export type VideoSourceType = 'default' | 'url' | 'local'
 
 export interface VideoSource {
@@ -16,8 +18,8 @@ export interface VideoSource {
   name?: string
 }
 
-const SOURCE_KEY = 'mytab-video-source'
-const DB_NAME = 'mytab-media'
+const SOURCE_KEY = 'carrier-pigeon-video-source'
+const DB_NAME = 'carrier-pigeon-media'
 const STORE = 'media'
 const BLOB_KEY = 'bgVideo'
 
@@ -88,6 +90,7 @@ export async function saveLocalVideo(file: File): Promise<void> {
 /** 读取本地视频并生成可播放的 objectURL；调用方负责 revoke */
 export async function loadLocalVideoURL(): Promise<string | null> {
   try {
+    await migrationReady
     const db = await openDB()
     try {
       const blob = await new Promise<Blob | undefined>((resolve, reject) => {
